@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="@android:style/Theme.Holo.Light">
-        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:windowBackground">@drawable/window_background</item>
         <item name="android:actionBarStyle">@style/YouTubeActionBar</item>
     </style>
     <style name="YouTubeActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">
