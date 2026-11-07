@@ -381,7 +381,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
             setAdapterForView(listView, adapter);
         }
 
-        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        final TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
         if (tabHost != null) {
             tabHost.setup();
 
@@ -402,7 +402,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
 
             tabHost.setCurrentTab(0);
 
-            TabWidget tabWidget = tabHost.getTabWidget();
+            final TabWidget tabWidget = tabHost.getTabWidget();
             removeTabStrip(tabWidget);
             int compactHeight = (int) TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_DIP, 56f, getResources().getDisplayMetrics());
