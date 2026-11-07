@@ -7,16 +7,15 @@
         android:showAsAction="ifRoom|collapseActionView"
         android:actionViewClass="android.widget.SearchView" />
     <item
-        android:id="@+id/menu_library"
-        android:title="@string/tab_you"
-        android:icon="@drawable/youtube_account_grey600_24"
-        android:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/menu_settings"
-        android:title="@string/settings"
-        android:icon="@android:drawable/ic_menu_preferences"/>
-    <item
-        android:id="@+id/menu_about"
-        android:title="@string/about"
-        android:icon="@android:drawable/ic_menu_info_details"/>
+        android:id="@+id/menu_more"
+        android:title="@string/more"
+        android:icon="@drawable/youtube_more_vert_grey600_24"
+        android:showAsAction="always">
+        <menu>
+            <item android:id="@+id/menu_settings" android:title="@string/settings" />
+            <item android:id="@+id/menu_watch_on_tv" android:title="@string/watch_on_tv" />
+            <item android:id="@+id/menu_terms_and_privacy" android:title="@string/terms_and_privacy" />
+            <item android:id="@+id/menu_help" android:title="@string/help" />
+        </menu>
+    </item>
 </menu>

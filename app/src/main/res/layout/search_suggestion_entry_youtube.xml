@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="48dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:background="?android:attr/selectableItemBackground"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <ImageView
+        android:id="@+id/suggestion_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="4dp"
+        android:src="@drawable/youtube_query_suggestion"
+        android:scaleType="centerInside"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/suggestion_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingLeft="20dp"
+        android:paddingRight="8dp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textColor="#606060"
+        android:textSize="16sp" />
+
+    <ImageView
+        android:id="@+id/edit_suggestion"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/youtube_edit_suggestion"
+        android:scaleType="centerInside"
+        android:contentDescription="@string/search" />
+</LinearLayout>

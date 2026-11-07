@@ -195,30 +195,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/inbox"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="32dp">
-
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:contentDescription="@string/tab_inbox"
-                    android:src="@drawable/youtube_inbox_empty" />
-
-                <TextView
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:gravity="center"
-                    android:text="@string/inbox_empty"
-                    android:textColor="#606060"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/me"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"

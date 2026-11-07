@@ -4,14 +4,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.MatrixCursor;
-import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -31,7 +30,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TabHost;
@@ -452,11 +450,6 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
             safeSetIndicator(tabSpec, getString(R.string.tab_subscriptions), R.drawable.youtube_tab_subscriptions);
             tabHost.addTab(tabSpec);
 
-            tabSpec = tabHost.newTabSpec("inbox");
-            tabSpec.setContent(R.id.inbox);
-            safeSetIndicator(tabSpec, getString(R.string.tab_inbox), R.drawable.youtube_tab_inbox);
-            tabHost.addTab(tabSpec);
-
             tabSpec = tabHost.newTabSpec("library");
             tabSpec.setContent(R.id.me);
             safeSetIndicator(tabSpec, getString(R.string.tab_you), R.drawable.youtube_tab_library);
@@ -472,14 +465,12 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                     getString(R.string.tab_home),
                     getString(R.string.tab_trending),
                     getString(R.string.tab_subscriptions),
-                    getString(R.string.tab_inbox),
                     getString(R.string.tab_you)
             };
             int[] iconResIds = new int[] {
                     R.drawable.youtube_tab_home,
                     R.drawable.youtube_tab_trending,
                     R.drawable.youtube_tab_subscriptions,
-                    R.drawable.youtube_tab_inbox,
                     R.drawable.youtube_tab_library
             };
             for (int i = 0; i < tabWidget.getChildCount(); i++) {
@@ -1428,16 +1419,53 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         final MenuItem searchItem = menu.findItem(R.id.menu_search);
+        MenuItem moreItem = menu.findItem(R.id.menu_more);
+        if (moreItem != null) moreItem.setIcon(R.drawable.youtube_more_vert_grey600_24);
         if (searchItem != null) {
-            SearchView searchView = (SearchView) searchItem.getActionView();
+            final SearchView searchView = (SearchView) searchItem.getActionView();
             searchSuggestionsCursorAdapter = new SimpleCursorAdapter(
                     this,
-                    android.R.layout.simple_dropdown_item_1line,
+                    R.layout.search_suggestion_entry_youtube,
                     null,
                     new String[] { "suggest_text_1" },
-                    new int[] { android.R.id.text1 });
+                    new int[] { R.id.suggestion_text });
+            searchSuggestionsCursorAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
+                @Override
+                public boolean setViewValue(View view, android.database.Cursor cursor, int columnIndex) {
+                    if (view.getId() != R.id.suggestion_text) return false;
+                    String suggestion = cursor.getString(columnIndex);
+                    View row = (View) view.getParent();
+                    ImageView editSuggestion = (ImageView) row.findViewById(R.id.edit_suggestion);
+                    if (editSuggestion != null) {
+                        editSuggestion.setTag(suggestion);
+                        editSuggestion.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View editView) {
+                                Object value = editView.getTag();
+                                if (value instanceof String) searchView.setQuery((String) value, false);
+                            }
+                        });
+                    }
+                    return false;
+                }
+            });
             searchView.setSuggestionsAdapter(searchSuggestionsCursorAdapter);
             searchView.setQueryHint(getString(R.string.search_hint));
+            searchView.setIconifiedByDefault(true);
+            int searchTextId = getResources().getIdentifier("search_src_text", "id", "android");
+            if (searchTextId != 0) {
+                TextView searchText = (TextView) searchView.findViewById(searchTextId);
+                if (searchText != null) {
+                    searchText.setTextColor(0xff333333);
+                    searchText.setHintTextColor(0xff777777);
+                    searchText.setTextSize(18);
+                }
+            }
+            int searchIconId = getResources().getIdentifier("search_mag_icon", "id", "android");
+            if (searchIconId != 0) {
+                ImageView searchIcon = (ImageView) searchView.findViewById(searchIconId);
+                if (searchIcon != null) searchIcon.setImageResource(R.drawable.youtube_search_grey600_24);
+            }
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
@@ -1573,64 +1601,25 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         if (item.getItemId() == R.id.menu_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
-        } else if (item.getItemId() == R.id.menu_library) {
-            TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
-            if (tabHost != null) tabHost.setCurrentTab(4);
+        } else if (item.getItemId() == R.id.menu_watch_on_tv) {
+            openExternalPage("https://support.google.com/youtube/answer/7640706?co=GENIE.Platform%3DAndroid&hl=ko");
             return true;
-        } else if (item.getItemId() == R.id.menu_about) {
-            LinearLayout layout = new LinearLayout(this);
-            layout.setOrientation(LinearLayout.VERTICAL);
-            layout.setPadding(15, 15, 15, 15);
-
-            final TextView app = new TextView(this);
-            app.setText(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME);
-            app.setTypeface(null, Typeface.BOLD);
-            app.setTextSize(20);
-            app.setGravity(Gravity.CENTER_HORIZONTAL);
-            layout.addView(app);
-
-            final ImageView imageView = new ImageView(this);
-            imageView.setLayoutParams(new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.FILL_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            ));
-            imageView.setImageResource(R.drawable.youtube_actionbar_logo);
-            layout.addView(imageView);
-
-            final TextView text = new TextView(this);
-            text.setText(getString(R.string.about_) + "\n\nMIT License\n" +
-                    "\n" +
-                    "Copyright (c) 2021-2025 Arman Jussupgaliyev\n" +
-                    "\n" +
-                    "Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
-                    "of this software and associated documentation files (the \"Software\"), to deal\n" +
-                    "in the Software without restriction, including without limitation the rights\n" +
-                    "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
-                    "copies of the Software, and to permit persons to whom the Software is\n" +
-                    "furnished to do so, subject to the following conditions:\n" +
-                    "\n" +
-                    "The above copyright notice and this permission notice shall be included in all\n" +
-                    "copies or substantial portions of the Software.\n" +
-                    "\n" +
-                    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
-                    "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
-                    "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
-                    "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
-                    "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
-                    "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" +
-                    "SOFTWARE.");
-            layout.addView(text);
-
-            ScrollView scrollView = new ScrollView(this);
-            scrollView.addView(layout);
-
-            new android.app.AlertDialog.Builder(this)
-                    .setTitle(R.string.app_name)
-                    .setView(scrollView)
-                    .setNeutralButton(android.R.string.ok, null).show();
+        } else if (item.getItemId() == R.id.menu_terms_and_privacy) {
+            openExternalPage("https://kr.youtube.com/t/terms");
+            return true;
+        } else if (item.getItemId() == R.id.menu_help) {
+            openExternalPage("https://support.google.com/youtube/?hl=ko");
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openExternalPage(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.external_page_failed, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private class SearchTask extends AsyncTask<String, Void, SearchResult> {

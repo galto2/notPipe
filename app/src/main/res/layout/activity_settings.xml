@@ -24,14 +24,21 @@
                 android:layout_height="wrap_content"
                 android:text="@string/server_settings"
                 android:textStyle="bold"
-                android:textSize="14sp"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:paddingTop="8dp"
                 android:paddingBottom="8dp"
                 android:textColor="#606060"/>
 
             <Switch
                 android:id="@+id/update_chk"
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:thumb="@drawable/youtube_switch_thumb"
+                android:track="@drawable/youtube_switch_track"
                 android:text="@string/update_instances_url"/>
             <LinearLayout
                 android:id="@+id/update_instances"
@@ -93,8 +100,10 @@
                 android:layout_height="wrap_content"
                 android:text="@string/video_settings"
                 android:textStyle="bold"
-                android:textSize="14sp"
-                android:paddingTop="24dp"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:paddingTop="20dp"
+                android:paddingBottom="8dp"
                 android:textColor="#606060"/>
 
             <LinearLayout
@@ -118,29 +127,40 @@
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                style="@style/YouTubeSettingsDescription"
                 android:text="@string/video_player_desc"/>
 
             <Switch
                 android:id="@+id/stream_playback_chk"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:checked="true"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:thumb="@drawable/youtube_switch_thumb"
+                android:track="@drawable/youtube_switch_track"
                 android:text="@string/stream_playback"/>
 
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                style="@style/YouTubeSettingsDescription"
                 android:text="@string/stream_playback_desc"/>
 
             <Switch
                 android:id="@+id/background_playback_chk"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:thumb="@drawable/youtube_switch_thumb"
+                android:track="@drawable/youtube_switch_track"
                 android:text="@string/background_playback" />
 
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                style="@style/YouTubeSettingsDescription"
                 android:text="@string/background_playback_desc" />
 
             <LinearLayout
@@ -171,19 +191,26 @@
                 android:layout_height="wrap_content"
                 android:text="@string/conversion"
                 android:textStyle="bold"
-                android:textSize="14sp"
-                android:paddingTop="24dp"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:paddingTop="20dp"
+                android:paddingBottom="8dp"
                 android:textColor="#606060"/>
 
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                style="@style/YouTubeSettingsDescription"
                 android:text="@string/conversion_"/>
 
             <Switch
                 android:id="@+id/convert_chk"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:thumb="@drawable/youtube_switch_thumb"
+                android:track="@drawable/youtube_switch_track"
                 android:text="@string/convert_videos"/>
 
             <LinearLayout

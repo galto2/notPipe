@@ -17,6 +17,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+
+import io.github.gohoski.notpipe.api.Codec;
+import io.github.gohoski.notpipe.api.Manager;
+import io.github.gohoski.notpipe.config.Config;
+import io.github.gohoski.notpipe.config.ConfigManager;
+import io.github.gohoski.notpipe.http.HttpClient;
 
 /**
  * Keeps the current audio stream alive while the video screen is in the background.
@@ -26,12 +33,21 @@ public class BackgroundPlaybackService extends Service {
     public static final String ACTION_START = "io.github.gohoski.notpipe.action.BACKGROUND_START";
     public static final String ACTION_TOGGLE = "io.github.gohoski.notpipe.action.BACKGROUND_TOGGLE";
     public static final String ACTION_STOP = "io.github.gohoski.notpipe.action.BACKGROUND_STOP";
+    public static final String ACTION_NEXT = "io.github.gohoski.notpipe.action.BACKGROUND_NEXT";
+    public static final String ACTION_PREVIOUS = "io.github.gohoski.notpipe.action.BACKGROUND_PREVIOUS";
+    public static final String ACTION_UPDATE_QUEUE = "io.github.gohoski.notpipe.action.BACKGROUND_UPDATE_QUEUE";
     public static final String EXTRA_URL = "url";
     public static final String EXTRA_TITLE = "title";
     public static final String EXTRA_CHANNEL = "channel";
     public static final String EXTRA_THUMBNAIL_URL = "thumbnail_url";
     public static final String EXTRA_POSITION = "position";
     public static final String EXTRA_VIDEO_ID = "video_id";
+    public static final String EXTRA_OPEN_FROM_NOTIFICATION = "open_from_background_notification";
+    public static final String EXTRA_QUEUE_IDS = "queue_ids";
+    public static final String EXTRA_QUEUE_TITLES = "queue_titles";
+    public static final String EXTRA_QUEUE_CHANNELS = "queue_channels";
+    public static final String EXTRA_QUEUE_THUMBNAILS = "queue_thumbnails";
+    public static final String EXTRA_QUEUE_POSITION = "queue_position";
 
     private static final int NOTIFICATION_ID = 41;
     private static volatile boolean running;
@@ -40,6 +56,11 @@ public class BackgroundPlaybackService extends Service {
     private static volatile boolean playbackSessionAvailable;
     private static volatile String playbackVideoId;
     private static volatile String playbackUrl;
+    private static ArrayList<String> activeQueueIds;
+    private static ArrayList<String> activeQueueTitles;
+    private static ArrayList<String> activeQueueChannels;
+    private static ArrayList<String> activeQueueThumbnails;
+    private static int activeQueuePosition;
 
     private MediaPlayer player;
     private String title;
@@ -48,6 +69,9 @@ public class BackgroundPlaybackService extends Service {
     private String thumbnailUrl;
     private Bitmap notificationThumbnail;
     private AsyncTask<String, Void, Bitmap> thumbnailTask;
+    private ArrayList<QueueItem> playbackQueue = new ArrayList<QueueItem>();
+    private int playbackQueuePosition;
+    private QueueTrackTask queueTrackTask;
     private boolean prepared;
     private Handler positionHandler;
     private final Runnable positionRunnable = new Runnable() {
@@ -102,6 +126,20 @@ public class BackgroundPlaybackService extends Service {
         playbackUrl = null;
     }
 
+    public static synchronized void copyPlaybackQueueToIntent(Intent intent) {
+        if (intent == null) return;
+        if (activeQueueIds == null) return;
+        intent.putStringArrayListExtra(EXTRA_QUEUE_IDS, new ArrayList<String>(activeQueueIds));
+        intent.putStringArrayListExtra(EXTRA_QUEUE_TITLES, copyQueue(activeQueueTitles));
+        intent.putStringArrayListExtra(EXTRA_QUEUE_CHANNELS, copyQueue(activeQueueChannels));
+        intent.putStringArrayListExtra(EXTRA_QUEUE_THUMBNAILS, copyQueue(activeQueueThumbnails));
+        intent.putExtra(EXTRA_QUEUE_POSITION, activeQueuePosition);
+    }
+
+    private static ArrayList<String> copyQueue(ArrayList<String> source) {
+        return source == null ? new ArrayList<String>() : new ArrayList<String>(source);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -119,8 +157,19 @@ public class BackgroundPlaybackService extends Service {
         String action = intent.getAction();
         if (ACTION_TOGGLE.equals(action)) {
             togglePlayback();
+        } else if (ACTION_NEXT.equals(action)) {
+            playQueueTrack(playbackQueuePosition + 1);
+        } else if (ACTION_PREVIOUS.equals(action)) {
+            playPrevious();
+        } else if (ACTION_UPDATE_QUEUE.equals(action)) {
+            if (queueTrackTask != null) {
+                queueTrackTask.cancel(true);
+                queueTrackTask = null;
+            }
+            readPlaybackQueue(intent);
+            updateNotification(playbackRequested);
         } else if (ACTION_STOP.equals(action)) {
-            playbackRequested = false;
+            clearPlaybackSession();
             stopSelf();
         } else if (ACTION_START.equals(action)) {
             startPlayback(intent);
@@ -129,9 +178,14 @@ public class BackgroundPlaybackService extends Service {
     }
 
     private void startPlayback(Intent intent) {
+        if (queueTrackTask != null) {
+            queueTrackTask.cancel(true);
+            queueTrackTask = null;
+        }
         releasePlayer();
         cancelThumbnailLoad();
         releaseThumbnail();
+        readPlaybackQueue(intent);
         String url = intent.getStringExtra(EXTRA_URL);
         title = intent.getStringExtra(EXTRA_TITLE);
         channel = intent.getStringExtra(EXTRA_CHANNEL);
@@ -140,6 +194,7 @@ public class BackgroundPlaybackService extends Service {
         playbackVideoId = videoId;
         playbackUrl = url;
         lastPosition = intent.getIntExtra(EXTRA_POSITION, 0);
+        updateActivePlaybackQueue();
         if (url == null || url.length() == 0) {
             clearPlaybackSession();
             stopSelf();
@@ -170,7 +225,11 @@ public class BackgroundPlaybackService extends Service {
         player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
-                lastPosition = 0;
+                try {
+                    lastPosition = mediaPlayer.getDuration();
+                } catch (IllegalStateException ignored) {
+                    lastPosition = 0;
+                }
                 playbackRequested = false;
                 stopSelf();
             }
@@ -196,6 +255,170 @@ public class BackgroundPlaybackService extends Service {
             stopSelf();
         } catch (IllegalStateException e) {
             stopSelf();
+        }
+    }
+
+    private void readPlaybackQueue(Intent intent) {
+        ArrayList<String> ids = intent.getStringArrayListExtra(EXTRA_QUEUE_IDS);
+        if (ids == null) return;
+        ArrayList<String> titles = intent.getStringArrayListExtra(EXTRA_QUEUE_TITLES);
+        ArrayList<String> channels = intent.getStringArrayListExtra(EXTRA_QUEUE_CHANNELS);
+        ArrayList<String> thumbnails = intent.getStringArrayListExtra(EXTRA_QUEUE_THUMBNAILS);
+        playbackQueue.clear();
+        for (int i = 0; i < ids.size(); i++) {
+            String id = ids.get(i);
+            if (id == null || id.length() == 0) continue;
+            playbackQueue.add(new QueueItem(id,
+                    queueValue(titles, i), queueValue(channels, i), queueValue(thumbnails, i)));
+        }
+        int requestedPosition = intent.getIntExtra(EXTRA_QUEUE_POSITION, 0);
+        playbackQueuePosition = requestedPosition < 0 || requestedPosition >= playbackQueue.size()
+                ? 0 : requestedPosition;
+        updateActivePlaybackQueue();
+    }
+
+    private String queueValue(ArrayList<String> values, int position) {
+        return values == null || position < 0 || position >= values.size() || values.get(position) == null
+                ? "" : values.get(position);
+    }
+
+    private void updateActivePlaybackQueue() {
+        synchronized (BackgroundPlaybackService.class) {
+            activeQueueIds = new ArrayList<String>();
+            activeQueueTitles = new ArrayList<String>();
+            activeQueueChannels = new ArrayList<String>();
+            activeQueueThumbnails = new ArrayList<String>();
+            for (int i = 0; i < playbackQueue.size(); i++) {
+                QueueItem item = playbackQueue.get(i);
+                activeQueueIds.add(item.id);
+                activeQueueTitles.add(item.title);
+                activeQueueChannels.add(item.channel);
+                activeQueueThumbnails.add(item.thumbnailUrl);
+            }
+            activeQueuePosition = playbackQueuePosition;
+        }
+    }
+
+    private void playPrevious() {
+        if (player != null && prepared) {
+            try {
+                if (player.getCurrentPosition() > 3000) {
+                    player.seekTo(0);
+                    lastPosition = 0;
+                    updateNotification(playbackRequested);
+                    return;
+                }
+            } catch (IllegalStateException ignored) {}
+        }
+        if (playbackQueuePosition > 0) {
+            playQueueTrack(playbackQueuePosition - 1);
+        } else if (player != null && prepared) {
+            try {
+                player.seekTo(0);
+                lastPosition = 0;
+                updateNotification(playbackRequested);
+            } catch (IllegalStateException ignored) {}
+        }
+    }
+
+    private void playQueueTrack(int position) {
+        if (position < 0 || position >= playbackQueue.size()) return;
+        if (queueTrackTask != null) queueTrackTask.cancel(true);
+        queueTrackTask = new QueueTrackTask(position);
+        queueTrackTask.execute();
+    }
+
+    private class QueueTrackTask extends AsyncTask<Void, Void, QueueTrackResult> {
+        private final int targetPosition;
+        private final QueueItem targetItem;
+
+        QueueTrackTask(int position) {
+            targetPosition = position;
+            targetItem = position < 0 || position >= playbackQueue.size() ? null : playbackQueue.get(position);
+        }
+
+        @Override
+        protected QueueTrackResult doInBackground(Void... ignored) {
+            if (targetItem == null) return null;
+            try {
+                Config config = ConfigManager.getInstance().getConfig();
+                String quality = config.getPreferredQuality();
+                if (quality == null || quality.length() == 0) quality = "360";
+                String url;
+                if (config.isConvertVideos()) {
+                    url = Manager.getInstance().getConvUrl(targetItem.id, quality,
+                            Codec.fromIndex(config.getConvertCodec()), null);
+                } else {
+                    url = Manager.getInstance().getVideoUrl(targetItem.id, quality, HttpClient.TIMEOUT, null);
+                }
+                return new QueueTrackResult(targetPosition, targetItem, url);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(QueueTrackResult result) {
+            if (queueTrackTask != this) return;
+            queueTrackTask = null;
+            if (result == null || result.url == null || result.url.length() == 0) return;
+            playbackQueuePosition = result.position;
+            Intent playbackIntent = new Intent(BackgroundPlaybackService.this, BackgroundPlaybackService.class);
+            playbackIntent.setAction(ACTION_START);
+            playbackIntent.putExtra(EXTRA_URL, result.url);
+            playbackIntent.putExtra(EXTRA_VIDEO_ID, result.item.id);
+            playbackIntent.putExtra(EXTRA_TITLE, result.item.title);
+            playbackIntent.putExtra(EXTRA_CHANNEL, result.item.channel);
+            playbackIntent.putExtra(EXTRA_THUMBNAIL_URL, result.item.thumbnailUrl);
+            playbackIntent.putExtra(EXTRA_POSITION, 0);
+            addQueueToIntent(playbackIntent);
+            startService(playbackIntent);
+        }
+    }
+
+    private void addQueueToIntent(Intent intent) {
+        ArrayList<String> ids = new ArrayList<String>();
+        ArrayList<String> titles = new ArrayList<String>();
+        ArrayList<String> channels = new ArrayList<String>();
+        ArrayList<String> thumbnails = new ArrayList<String>();
+        for (int i = 0; i < playbackQueue.size(); i++) {
+            QueueItem item = playbackQueue.get(i);
+            ids.add(item.id);
+            titles.add(item.title);
+            channels.add(item.channel);
+            thumbnails.add(item.thumbnailUrl);
+        }
+        intent.putStringArrayListExtra(EXTRA_QUEUE_IDS, ids);
+        intent.putStringArrayListExtra(EXTRA_QUEUE_TITLES, titles);
+        intent.putStringArrayListExtra(EXTRA_QUEUE_CHANNELS, channels);
+        intent.putStringArrayListExtra(EXTRA_QUEUE_THUMBNAILS, thumbnails);
+        intent.putExtra(EXTRA_QUEUE_POSITION, playbackQueuePosition);
+    }
+
+    private static class QueueItem {
+        final String id;
+        final String title;
+        final String channel;
+        final String thumbnailUrl;
+
+        QueueItem(String id, String title, String channel, String thumbnailUrl) {
+            this.id = id;
+            this.title = title;
+            this.channel = channel;
+            this.thumbnailUrl = thumbnailUrl;
+        }
+    }
+
+    private static class QueueTrackResult {
+        final int position;
+        final QueueItem item;
+        final String url;
+
+        QueueTrackResult(int position, QueueItem item, String url) {
+            this.position = position;
+            this.item = item;
+            this.url = url;
         }
     }
 
@@ -230,24 +453,35 @@ public class BackgroundPlaybackService extends Service {
         Intent openIntent = new Intent(this, VideoActivity.class);
         openIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         openIntent.putExtra("ID", videoId);
+        openIntent.putExtra(EXTRA_OPEN_FROM_NOTIFICATION, true);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Intent toggleIntent = new Intent(this, BackgroundPlaybackService.class);
         toggleIntent.setAction(ACTION_TOGGLE);
         PendingIntent togglePendingIntent = PendingIntent.getService(this, 1, toggleIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+        Intent previousIntent = new Intent(this, BackgroundPlaybackService.class);
+        previousIntent.setAction(ACTION_PREVIOUS);
+        PendingIntent previousPendingIntent = PendingIntent.getService(this, 2, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Intent nextIntent = new Intent(this, BackgroundPlaybackService.class);
+        nextIntent.setAction(ACTION_NEXT);
+        PendingIntent nextPendingIntent = PendingIntent.getService(this, 3, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         String playbackState = getString(playing ? R.string.background_playing : R.string.background_paused);
         String contentText = channel == null || channel.length() == 0 ? playbackState : channel;
         Notification.Builder builder = new Notification.Builder(this)
                 .setSmallIcon(R.drawable.youtube_notification_small)
-                .setContentTitle(title == null ? getString(R.string.app_name) : title)
+                .setContentTitle(title == null || title.length() == 0 ? getString(R.string.app_name) : title)
                 .setContentText(contentText)
                 .setSubText(playbackState)
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .addAction(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
-                        playing ? getString(R.string.pause) : getString(R.string.resume), togglePendingIntent);
+                .addAction(R.drawable.youtube_notification_previous, getString(R.string.previous), previousPendingIntent)
+                .addAction(playing ? R.drawable.youtube_notification_pause : R.drawable.youtube_notification_play,
+                        playing ? getString(R.string.pause) : getString(R.string.resume), togglePendingIntent)
+                .addAction(R.drawable.youtube_notification_next, getString(R.string.next), nextPendingIntent);
         if (notificationThumbnail != null && !notificationThumbnail.isRecycled()) {
             builder.setLargeIcon(notificationThumbnail);
         }
@@ -336,10 +570,21 @@ public class BackgroundPlaybackService extends Service {
     @Override
     public void onDestroy() {
         if (positionHandler != null) positionHandler.removeCallbacks(positionRunnable);
+        if (queueTrackTask != null) {
+            queueTrackTask.cancel(true);
+            queueTrackTask = null;
+        }
         cancelThumbnailLoad();
         releasePlayer();
         releaseThumbnail();
         running = false;
+        synchronized (BackgroundPlaybackService.class) {
+            activeQueueIds = null;
+            activeQueueTitles = null;
+            activeQueueChannels = null;
+            activeQueueThumbnails = null;
+            activeQueuePosition = 0;
+        }
         stopForeground(true);
         super.onDestroy();
     }

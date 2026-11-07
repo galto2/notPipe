@@ -156,6 +156,11 @@ public class VideoActivity extends Activity {
 
     private int videoBufferTimeout = 60000;
     private static final String DIR_VIDEOS = "notPipe/videos";
+    private ArrayList<String> playbackQueueIds;
+    private ArrayList<String> playbackQueueTitles;
+    private ArrayList<String> playbackQueueChannels;
+    private ArrayList<String> playbackQueueThumbnails;
+    private int playbackQueuePosition;
 
     private Handler systemUiHandler = new Handler();
     private Runnable hideSystemUiRunnable = new Runnable() {
@@ -183,6 +188,7 @@ public class VideoActivity extends Activity {
         } else {
             videoId = uri.getHost().contains("youtube.com") ? uri.getQueryParameter("v") : uri.getLastPathSegment();
         }
+        readPlaybackQueue(intent);
 
         relatedAdapter = new VideoAdapter(this, R.layout.item_video_compact, relatedVideos);
 
@@ -264,8 +270,85 @@ public class VideoActivity extends Activity {
 
     private void handleVideoClick(int position) {
         Intent intent = new Intent(context, VideoActivity.class);
-        intent.putExtra("ID", relatedVideos.get(position).id);
+        VideoInfo selectedVideo = relatedVideos.get(position);
+        intent.putExtra("ID", selectedVideo.id);
+        ensurePlaybackQueue();
+        int selectedQueuePosition = findPlaybackQueuePosition(selectedVideo.id);
+        if (selectedQueuePosition < 0) {
+            appendPlaybackQueueItem(selectedVideo.id, selectedVideo.title, selectedVideo.channel, selectedVideo.thumbnail);
+            selectedQueuePosition = findPlaybackQueuePosition(selectedVideo.id);
+        }
+        addPlaybackQueueExtras(intent, selectedQueuePosition);
         context.startActivity(intent);
+    }
+
+    private void readPlaybackQueue(Intent intent) {
+        playbackQueueIds = intent.getStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_IDS);
+        playbackQueueTitles = intent.getStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_TITLES);
+        playbackQueueChannels = intent.getStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_CHANNELS);
+        playbackQueueThumbnails = intent.getStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_THUMBNAILS);
+        playbackQueuePosition = intent.getIntExtra(BackgroundPlaybackService.EXTRA_QUEUE_POSITION, 0);
+        if (playbackQueueIds == null) playbackQueueIds = new ArrayList<String>();
+        if (playbackQueueTitles == null) playbackQueueTitles = new ArrayList<String>();
+        if (playbackQueueChannels == null) playbackQueueChannels = new ArrayList<String>();
+        if (playbackQueueThumbnails == null) playbackQueueThumbnails = new ArrayList<String>();
+        alignPlaybackQueueMetadata();
+    }
+
+    private void ensurePlaybackQueue() {
+        if (videoId != null && findPlaybackQueuePosition(videoId) < 0) {
+            String title = video == null ? getString(R.string.app_name) : video.title;
+            String channel = video == null ? "" : video.channel;
+            String thumbnailUrl = video == null ? "" : video.thumbnail;
+            playbackQueueIds.add(0, videoId);
+            playbackQueueTitles.add(0, title);
+            playbackQueueChannels.add(0, channel);
+            playbackQueueThumbnails.add(0, thumbnailUrl);
+            playbackQueuePosition = 0;
+        }
+
+        List<VideoInfo> related = relatedVideos;
+        if ((related == null || related.isEmpty()) && video != null) related = video.related;
+        if (related != null) {
+            for (int i = 0; i < related.size(); i++) {
+                VideoInfo item = related.get(i);
+                if (item != null && item.id != null && findPlaybackQueuePosition(item.id) < 0) {
+                    appendPlaybackQueueItem(item.id, item.title, item.channel, item.thumbnail);
+                }
+            }
+        }
+        int currentPosition = findPlaybackQueuePosition(videoId);
+        if (currentPosition >= 0) playbackQueuePosition = currentPosition;
+        alignPlaybackQueueMetadata();
+    }
+
+    private void appendPlaybackQueueItem(String id, String title, String channel, String thumbnailUrl) {
+        if (id == null || findPlaybackQueuePosition(id) >= 0) return;
+        playbackQueueIds.add(id);
+        playbackQueueTitles.add(title == null ? "" : title);
+        playbackQueueChannels.add(channel == null ? "" : channel);
+        playbackQueueThumbnails.add(thumbnailUrl == null ? "" : thumbnailUrl);
+    }
+
+    private int findPlaybackQueuePosition(String id) {
+        if (id == null || playbackQueueIds == null) return -1;
+        return playbackQueueIds.indexOf(id);
+    }
+
+    private void alignPlaybackQueueMetadata() {
+        while (playbackQueueTitles.size() < playbackQueueIds.size()) playbackQueueTitles.add("");
+        while (playbackQueueChannels.size() < playbackQueueIds.size()) playbackQueueChannels.add("");
+        while (playbackQueueThumbnails.size() < playbackQueueIds.size()) playbackQueueThumbnails.add("");
+    }
+
+    private void addPlaybackQueueExtras(Intent intent, int selectedPosition) {
+        ensurePlaybackQueue();
+        playbackQueuePosition = selectedPosition >= 0 ? selectedPosition : 0;
+        intent.putStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_IDS, playbackQueueIds);
+        intent.putStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_TITLES, playbackQueueTitles);
+        intent.putStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_CHANNELS, playbackQueueChannels);
+        intent.putStringArrayListExtra(BackgroundPlaybackService.EXTRA_QUEUE_THUMBNAILS, playbackQueueThumbnails);
+        intent.putExtra(BackgroundPlaybackService.EXTRA_QUEUE_POSITION, playbackQueuePosition);
     }
 
     private int lastScrollY = -1;
@@ -734,14 +817,16 @@ public class VideoActivity extends Activity {
             dislikeButton = findViewById(R.id.dislike);
         }
         if (likeButton != null) {
-            int likeRes = currentRating == 1 ? R.drawable.ic_liked : R.drawable.ic_like;
+            int likeRes = currentRating == 1
+                    ? R.drawable.youtube_thumb_up_active : R.drawable.youtube_thumb_up;
             try {
                 likeButton.setCompoundDrawablesWithIntrinsicBounds(likeRes, 0, 0, 0);
             } catch (Exception ignored) {}
         }
         if (dislikeButton instanceof ImageView) {
             try {
-                ((ImageView) dislikeButton).setImageResource(R.drawable.ic_dislike);
+                ((ImageView) dislikeButton).setImageResource(currentRating == -1
+                        ? R.drawable.youtube_thumb_down_active : R.drawable.youtube_thumb_down);
             } catch (Exception ignored) {}
         }
     }
@@ -1177,10 +1262,26 @@ public class VideoActivity extends Activity {
         isActivityStopped = false;
     }
 
-    private void restoreBackgroundPlaybackSession() {
+    private boolean restoreBackgroundPlaybackSession() {
         if (BackgroundPlaybackService.hasPlaybackSession()) {
             String playbackVideoId = BackgroundPlaybackService.getPlaybackVideoId();
             boolean sameVideo = videoId != null && videoId.equals(playbackVideoId);
+            if (!sameVideo && playbackVideoId != null) {
+                boolean openedFromNotification = getIntent().getBooleanExtra(
+                        BackgroundPlaybackService.EXTRA_OPEN_FROM_NOTIFICATION, false);
+                if (openedFromNotification) {
+                    Intent intent = new Intent(this, VideoActivity.class);
+                    intent.putExtra("ID", playbackVideoId);
+                    BackgroundPlaybackService.copyPlaybackQueueToIntent(intent);
+                    startActivity(intent);
+                    finish();
+                    return true;
+                }
+                BackgroundPlaybackService.clearPlaybackSession();
+                if (BackgroundPlaybackService.isRunning()) {
+                    stopService(new Intent(this, BackgroundPlaybackService.class));
+                }
+            }
             if (sameVideo) {
                 videoPosition = BackgroundPlaybackService.getPosition();
                 videoPlaying = BackgroundPlaybackService.wasPlaybackRequested();
@@ -1195,6 +1296,7 @@ public class VideoActivity extends Activity {
                 videoPrepared = false;
             }
         }
+        return false;
     }
 
     @Override
@@ -1234,13 +1336,15 @@ public class VideoActivity extends Activity {
         }
         playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_POSITION, videoPosition);
         playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_VIDEO_ID, videoId);
+        ensurePlaybackQueue();
+        addPlaybackQueueExtras(playbackIntent, playbackQueuePosition);
         startService(playbackIntent);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        restoreBackgroundPlaybackSession();
+        if (restoreBackgroundPlaybackSession()) return;
         if (video != null) {
             setupAuthUI();
         }
@@ -1973,6 +2077,7 @@ public class VideoActivity extends Activity {
             relatedAdapter.notifyDataSetChanged();
             relatedLoading.setVisibility(View.GONE);
             relatedLoaded = true;
+            refreshBackgroundPlaybackQueue();
             if (noRelatedView != null) noRelatedView.setVisibility(View.GONE);
             triggerLayoutFix(relatedList);
         } else {
@@ -1983,6 +2088,17 @@ public class VideoActivity extends Activity {
             loadRelatedTask = new LoadRelatedTask();
             loadRelatedTask.execute(videoId);
         }
+    }
+
+    private void refreshBackgroundPlaybackQueue() {
+        if (!BackgroundPlaybackService.isRunning()
+                || videoId == null
+                || !videoId.equals(BackgroundPlaybackService.getPlaybackVideoId())) return;
+        ensurePlaybackQueue();
+        Intent queueIntent = new Intent(this, BackgroundPlaybackService.class);
+        queueIntent.setAction(BackgroundPlaybackService.ACTION_UPDATE_QUEUE);
+        addPlaybackQueueExtras(queueIntent, playbackQueuePosition);
+        startService(queueIntent);
     }
 
     private void loadComments() {
@@ -3352,6 +3468,7 @@ public class VideoActivity extends Activity {
                 relatedVideos.addAll(result);
                 relatedAdapter.notifyDataSetChanged();
                 relatedLoaded = true;
+                refreshBackgroundPlaybackQueue();
                 if (noRelatedView != null) noRelatedView.setVisibility(View.GONE);
                 relatedLoading.setVisibility(View.GONE);
                 triggerLayoutFix(relatedList);
@@ -3364,6 +3481,7 @@ public class VideoActivity extends Activity {
                 relatedAdapter.notifyDataSetChanged();
                 relatedLoading.setVisibility(View.GONE);
                 relatedLoaded = true;
+                refreshBackgroundPlaybackQueue();
                 if (noRelatedView != null) noRelatedView.setVisibility(View.GONE);
                 triggerLayoutFix(relatedList);
             } else {
@@ -3394,6 +3512,7 @@ public class VideoActivity extends Activity {
                 relatedVideos.addAll(result);
                 relatedAdapter.notifyDataSetChanged();
                 relatedLoaded = true;
+                refreshBackgroundPlaybackQueue();
                 if (noRelatedView != null) {
                     if (relatedVideos.isEmpty()) {
                         noRelatedView.setVisibility(View.VISIBLE);

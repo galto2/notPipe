@@ -18,6 +18,6 @@
         android:layout_height="48dp"
         android:background="?android:attr/selectableItemBackground"
         android:contentDescription="@string/remove_instance"
-        android:src="@android:drawable/ic_menu_delete"/>
+        android:src="@drawable/youtube_delete_grey600_24"/>
 
 </LinearLayout>

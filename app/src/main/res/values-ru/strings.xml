@@ -57,7 +57,6 @@
     <string name="views">%s просмотров</string>
     <string name="instances">Инстансы</string>
     <string name="like">Нравится</string>
-    <string name="about">О приложении</string>
     <string name="playback">Воспроизведение</string>
     <string name="quality_recommend">Для быстрой работы рекомендуется 360p.</string>
     <string name="settings">Настройки</string>
@@ -87,13 +86,11 @@
     <string name="convert_videos">Конвертировать видео</string>
     <string name="updating_instances">Обновление инстансов</string>
     <string name="video_codec">Видеокодек</string>
-    <string name="setting_footer">notPipe — клиент YouTube для старых андроидов\n▶ github.com/gohoski/notPipe\n▶ t.me/AppDataApps</string>
     <string name="loading">Загрузка</string>
     <string name="dead_instance">Инстанс %s мёртв, переключаемся</string>
     <string name="desc">Описание</string>
     <string name="select_ins">Выберите инстанс</string>
     <string name="loading_">(загрузка)</string>
-    <string name="about_">Рабочий клиент YouTube для устаревших версий Android. Сделано с ♡ и расчётом на долговечность.\n▶ github.com/gohoski/notPipe\n▶ t.me/AppDataApps\n\nРаспространяется под лицензией WTFPL. Подробности на www.wtfpl.net.\nБиблиотека NNJSON, используемая в этом проекте, распространяется под лицензией MIT, текст которой приведён ниже.</string>
     <string name="conv_long">Конвертация может занять некоторое время. Пожалуйста, подождите.</string>
     <string name="cache">кэш</string>
     <string name="sd_card">Чтобы продолжить, вставьте SD-карту</string>
@@ -168,8 +165,6 @@
     <string name="tab_home">Главная</string>
     <string name="tab_trending">В тренде</string>
     <string name="tab_subscriptions">Подписки</string>
-    <string name="tab_inbox">Входящие</string>
-    <string name="inbox_empty">Здесь будут появляться новые уведомления.</string>
     <string name="tab_you">Библиотека</string>
     <string name="server_settings">Серверы</string>
     <string name="video_settings">Настройки видео</string>
@@ -194,4 +189,15 @@
     <string name="instance_connect_failed">Не удалось подключиться к этому инстансу.</string>
     <string name="fetch_video_url_failed">Не удалось получить ссылку на видео</string>
     <string name="download_failed_retries">Загрузка не удалась после нескольких попыток.</string>
+    <string name="background_playing">Воспроизводится в фоне</string>
+    <string name="background_paused">На паузе</string>
+    <string name="pause">Пауза</string>
+    <string name="resume">Воспроизвести</string>
+    <string name="previous">Предыдущее</string>
+    <string name="next">Следующее</string>
+    <string name="more">Ещё</string>
+    <string name="watch_on_tv">Смотреть на телевизоре</string>
+    <string name="terms_and_privacy">Условия и политика конфиденциальности</string>
+    <string name="help">Справка</string>
+    <string name="external_page_failed">Не удалось открыть страницу</string>
 </resources>

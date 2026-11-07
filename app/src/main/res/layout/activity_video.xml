@@ -96,7 +96,7 @@
                             android:id="@+id/title"
                             android:layout_width="fill_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="18sp"
+                            android:textSize="16sp"
                             android:textColor="#0F0F0F"
                             tools:text="Example Title"/>
 
@@ -178,7 +178,7 @@
                         android:id="@+id/like"
                         android:layout_width="wrap_content"
                         android:layout_height="fill_parent"
-                        android:drawableLeft="@drawable/ic_like"
+                        android:drawableLeft="@drawable/youtube_thumb_up"
                         android:drawablePadding="6dp"
                         android:background="@android:color/transparent"
                         android:textColor="#606060"
@@ -191,13 +191,13 @@
                         android:layout_width="wrap_content"
                         android:layout_height="fill_parent"
                         android:background="@android:color/transparent"
-                        android:src="@drawable/ic_dislike"/>
+                        android:src="@drawable/youtube_thumb_down"/>
 
                     <Button
                         android:id="@+id/share"
                         android:layout_width="wrap_content"
                         android:layout_height="fill_parent"
-                        android:drawableLeft="@drawable/ic_share"
+                        android:drawableLeft="@drawable/youtube_share"
                         android:drawablePadding="6dp"
                         android:background="@android:color/transparent"
                         android:textColor="#606060"

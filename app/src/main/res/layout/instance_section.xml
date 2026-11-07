@@ -6,7 +6,8 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:textStyle="bold"
-        android:textSize="14sp"
+        android:textSize="12sp"
+        android:textAllCaps="true"
         android:textColor="#606060"
         android:paddingTop="12dp"
         android:paddingBottom="4dp"/>
@@ -39,7 +40,7 @@
             android:layout_height="48dp"
             android:background="?android:attr/selectableItemBackground"
             android:contentDescription="@string/add_instance"
-            android:src="@android:drawable/ic_input_add"/>
+            android:src="@drawable/youtube_add_grey600_24"/>
     </LinearLayout>
 
 </merge>

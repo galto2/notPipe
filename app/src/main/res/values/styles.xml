@@ -3,4 +3,10 @@
     <style name="AppTheme" parent="@android:style/Theme.Holo.Light">
         <item name="android:windowBackground">@drawable/window_background</item>
     </style>
+    <style name="YouTubeSettingsDescription">
+        <item name="android:textColor">#606060</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
 </resources>

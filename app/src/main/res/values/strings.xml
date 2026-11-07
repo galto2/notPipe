@@ -44,7 +44,6 @@
     <string name="settings">Settings</string>
     <string name="search">Search</string>
     <string name="search_hint">Search YouTube</string>
-    <string name="about">About</string>
     <string name="instances">Instances</string>
     <string name="add_instance">Add instance</string>
     <string name="remove_instance">Remove instance</string>
@@ -74,6 +73,8 @@
     <string name="background_paused">Paused</string>
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
     <string name="instance_exist">Instance already exists</string>
     <string name="incorrect_url">Please enter a correct URL</string>
     <string name="url">Enter URL</string>
@@ -82,9 +83,7 @@
     <string name="conversion_">Conversion may help if your device does not support H.264 and MX Player is slow or not available. Conversion is available only with yt2009 and YtAPILegacy instances. SD card is required only when stream playback is disabled. <b>Do not enable if videos are playing normally.</b></string>
     <string name="convert_videos">Convert videos</string>
     <string name="video_codec">Video codec</string>
-    <string name="setting_footer">notPipe — YouTube client for legacy Android\n▶ github.com/gohoski/notPipe\n▶ t.me/AppDataApps</string>
     <string name="loading">Loading</string>
-    <string name="about_">A working YouTube client for legacy Android. Made with ♡ and longevity in mind.\n▶ github.com/gohoski/notPipe\n▶ t.me/AppDataApps\n\nLicensed under the WTFPL. See www.wtfpl.net for more details.\nThe NNJSON library used in this project is licensed under the MIT License provided below.</string>
     <string name="dead_instance">Dead instance %s, switching</string>
     <string name="select_ins">Select instance</string>
     <string name="desc">Description</string>
@@ -163,9 +162,7 @@
     <string name="tab_home">Home</string>
     <string name="tab_trending">Trending</string>
     <string name="tab_subscriptions">Subscriptions</string>
-    <string name="tab_inbox">Inbox</string>
     <string name="tab_you">Library</string>
-    <string name="inbox_empty">Your updates will appear here.</string>
     <string name="server_settings">Servers</string>
     <string name="video_settings">Video settings</string>
     <string name="history">History</string>
@@ -189,4 +186,9 @@
     <string name="instance_connect_failed">Failed to connect to this instance.</string>
     <string name="fetch_video_url_failed">Failed to fetch video URL</string>
     <string name="download_failed_retries">Download failed after multiple attempts.</string>
+    <string name="more">More</string>
+    <string name="watch_on_tv">Watch on TV</string>
+    <string name="terms_and_privacy">Terms and Privacy Policy</string>
+    <string name="help">Help</string>
+    <string name="external_page_failed">Unable to open this page</string>
 </resources>
