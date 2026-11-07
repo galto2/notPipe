@@ -28,7 +28,7 @@
         android:layout_marginTop="4dip"
         android:gravity="center"
         android:textSize="11sp"
-        android:textColor="#CCCCCC"
+        android:textColor="#606060"
         android:singleLine="true"
         android:ellipsize="end"
         tools:text="Channel" />

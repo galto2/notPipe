@@ -27,6 +27,7 @@ public class ConfigManager {
     private static final String KEY_UPDATE_FREQUENCY = "update_frequency";
     private static final String KEY_EXTERNAL_PLAYER = "external_player";
     private static final String KEY_STREAM_PLAYBACK = "stream_playback";
+    private static final String KEY_BACKGROUND_PLAYBACK = "background_playback";
     private static final String KEY_LAST_UPDATE = "last_update";
     private static final String KEY_CONVERT_VIDEOS = "convert_videos";
     private static final String KEY_CONVERT_CODEC = "convert_codec";
@@ -90,6 +91,7 @@ public class ConfigManager {
         editor.putInt(KEY_UPDATE_FREQUENCY, config.getUpdateFrequency());
         editor.putBoolean(KEY_EXTERNAL_PLAYER, config.isUseExternalPlayer());
         editor.putBoolean(KEY_STREAM_PLAYBACK, config.isStreamPlayback());
+        editor.putBoolean(KEY_BACKGROUND_PLAYBACK, config.isBackgroundPlayback());
         editor.putLong(KEY_LAST_UPDATE, config.getLastUpdate());
         editor.putBoolean(KEY_CONVERT_VIDEOS, config.isConvertVideos());
         editor.putInt(KEY_CONVERT_CODEC, config.getConvertCodec());
@@ -142,6 +144,7 @@ public class ConfigManager {
         config.setInstancesUpdateUrl(prefs.getString(KEY_INSTANCES_URL, "http://144.31.189.129/notPipe.json"));
         config.setUpdateFrequency(prefs.getInt(KEY_UPDATE_FREQUENCY, 1));
         config.setUseExternalPlayer(prefs.getBoolean(KEY_EXTERNAL_PLAYER, false));
+        config.setBackgroundPlayback(prefs.getBoolean(KEY_BACKGROUND_PLAYBACK, true));
         config.setLastUpdate(prefs.getLong(KEY_LAST_UPDATE, 0L));
         config.setAsyncSetVideoUri(prefs.getBoolean(KEY_ASYNC_SET_VIDEO_URI, NotPipe.SDK >= 14 && NotPipe.SDK <= 18));
         config.setFullscreenRotateLandscape(prefs.getBoolean(KEY_FULLSCREEN_ROTATE, true));

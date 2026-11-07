@@ -4,6 +4,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
+    android:background="#FFFFFF"
     android:focusable="true"
     android:focusableInTouchMode="true">
     
@@ -24,9 +25,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/instances"
                 android:textStyle="bold"
-                android:textSize="20sp"
+                android:textSize="16sp"
                 android:paddingBottom="8dp"
-                android:textColor="@android:color/primary_text_dark"/>
+                android:textColor="#CC181E"/>
 
             <CheckBox
                 android:id="@+id/update_chk"
@@ -93,9 +94,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/playback"
                 android:textStyle="bold"
-                android:textSize="20sp"
+                android:textSize="16sp"
                 android:paddingTop="24dp"
-                android:textColor="@android:color/primary_text_dark"/>
+                android:textColor="#CC181E"/>
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -131,6 +132,17 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/stream_playback_desc"/>
+
+            <CheckBox
+                android:id="@+id/background_playback_chk"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/background_playback" />
+
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/background_playback_desc" />
 
             <CheckBox
                 android:id="@+id/async_uri_chk"
@@ -171,9 +183,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/conversion"
                 android:textStyle="bold"
-                android:textSize="20sp"
+                android:textSize="16sp"
                 android:paddingTop="24dp"
-                android:textColor="@android:color/primary_text_dark"/>
+                android:textColor="#CC181E"/>
 
             <TextView
                 android:layout_width="fill_parent"
@@ -212,9 +224,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/general"
                 android:textStyle="bold"
-                android:textSize="20sp"
+                android:textSize="16sp"
                 android:paddingTop="24dp"
-                android:textColor="@android:color/primary_text_dark"/>
+                android:textColor="#CC181E"/>
 
             <CheckBox
                 android:id="@+id/fullscreen_rotate_chk"
@@ -227,9 +239,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/hide_shorts"
                 android:textStyle="bold"
-                android:textSize="20sp"
+                android:textSize="16sp"
                 android:paddingTop="24dp"
-                android:textColor="@android:color/primary_text_dark"/>
+                android:textColor="#CC181E"/>
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -277,14 +289,16 @@
         
         <Button
             android:id="@+id/cancel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
             android:text="@android:string/cancel"/>
             
         <Button
             android:id="@+id/ok"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
             android:text="@android:string/ok"/>
     </LinearLayout>
 </LinearLayout>

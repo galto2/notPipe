@@ -184,7 +184,7 @@ public class VideoActivity extends Activity {
             videoId = uri.getHost().contains("youtube.com") ? uri.getQueryParameter("v") : uri.getLastPathSegment();
         }
 
-        relatedAdapter = new VideoAdapter(this, R.layout.item_video, relatedVideos);
+        relatedAdapter = new VideoAdapter(this, R.layout.item_video_compact, relatedVideos);
 
         commentsAdapter = new CommentAdapter(this, R.layout.item_comment, comments);
 
@@ -1159,6 +1159,8 @@ public class VideoActivity extends Activity {
                     if (videoView.isPlaying()) {
                         videoPlaying = true;
                         videoView.pause();
+                    } else {
+                        videoPlaying = false;
                     }
                 }
             } catch (Exception ignored) {}
@@ -1175,6 +1177,26 @@ public class VideoActivity extends Activity {
         isActivityStopped = false;
     }
 
+    private void restoreBackgroundPlaybackSession() {
+        if (BackgroundPlaybackService.hasPlaybackSession()) {
+            String playbackVideoId = BackgroundPlaybackService.getPlaybackVideoId();
+            boolean sameVideo = videoId != null && videoId.equals(playbackVideoId);
+            if (sameVideo) {
+                videoPosition = BackgroundPlaybackService.getPosition();
+                videoPlaying = BackgroundPlaybackService.wasPlaybackRequested();
+                videoUrl = BackgroundPlaybackService.getPlaybackUrl();
+            }
+            BackgroundPlaybackService.consumePlaybackSession();
+            if (BackgroundPlaybackService.isRunning()) {
+                stopService(new Intent(this, BackgroundPlaybackService.class));
+            }
+            if (sameVideo) {
+                isVideoViewNeedsReload = true;
+                videoPrepared = false;
+            }
+        }
+    }
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -1182,6 +1204,7 @@ public class VideoActivity extends Activity {
         cancelVideoTimeout(); // Cancel active buffer timeouts so they don't fire in the background
 
         if (videoView != null && videoUrl != null) {
+            startBackgroundPlayback();
             videoView.stopPlayback();
             videoView.setVisibility(View.GONE);
             isVideoViewNeedsReload = true;
@@ -1189,9 +1212,31 @@ public class VideoActivity extends Activity {
         }
     }
 
+    private void startBackgroundPlayback() {
+        if (config == null || !config.isBackgroundPlayback() || !videoPlaying
+                || config.isUseExternalPlayer() || videoUrl == null) return;
+
+        if (videoView != null && videoPrepared) {
+            try {
+                int currentPosition = videoView.getCurrentPosition();
+                if (currentPosition > 0) videoPosition = currentPosition;
+            } catch (Exception ignored) {}
+        }
+
+        Intent playbackIntent = new Intent(this, BackgroundPlaybackService.class);
+        playbackIntent.setAction(BackgroundPlaybackService.ACTION_START);
+        playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_URL, videoUrl);
+        playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_TITLE,
+                video == null ? getString(R.string.app_name) : video.title);
+        playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_POSITION, videoPosition);
+        playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_VIDEO_ID, videoId);
+        startService(playbackIntent);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        restoreBackgroundPlaybackSession();
         if (video != null) {
             setupAuthUI();
         }
@@ -1774,11 +1819,22 @@ public class VideoActivity extends Activity {
             }));
             hasDummy = true;
         }
-        tabHost.addTab(tabHost.newTabSpec("related").setIndicator(getString(R.string.related)).setContent(R.id.related));
-        tabHost.addTab(tabHost.newTabSpec("comments").setIndicator(getString(R.string.comments)).setContent(R.id.comments));
+        tabHost.addTab(tabHost.newTabSpec("related")
+                .setIndicator(createTextTabIndicator(getString(R.string.related)))
+                .setContent(R.id.related));
+        tabHost.addTab(tabHost.newTabSpec("comments")
+                .setIndicator(createTextTabIndicator(getString(R.string.comments)))
+                .setContent(R.id.comments));
 
-        TabWidget widget = tabHost.getTabWidget();
+        final TabWidget widget = tabHost.getTabWidget();
         if (widget != null) {
+            int tabHeight = (int) TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 48f, getResources().getDisplayMetrics());
+            for (int i = 0; i < widget.getChildCount(); i++) {
+                View tab = widget.getChildAt(i);
+                tab.setBackgroundResource(R.drawable.tab_selector);
+                if (tab.getLayoutParams() != null) tab.getLayoutParams().height = tabHeight;
+            }
             if (isTablet() && NotPipe.SDK >= 11) {
                 hideDummyTab();
             } else if (NotPipe.SDK < 11) {
@@ -1793,6 +1849,7 @@ public class VideoActivity extends Activity {
         }
         tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
             public void onTabChanged(final String tabId) {
+                updateTextTabIndicators(tabHost, widget);
                 tabHost.post(new Runnable() {
                     @Override
                     public void run() {
@@ -1825,6 +1882,28 @@ public class VideoActivity extends Activity {
 
         // If a dummy tab was inserted at index 0, select the "related" tab (index 1) explicitly
         if (hasDummy) tabHost.setCurrentTab(1);
+        updateTextTabIndicators(tabHost, widget);
+    }
+
+    private View createTextTabIndicator(String title) {
+        View indicator = getLayoutInflater().inflate(R.layout.tab_indicator, null);
+        ImageView icon = (ImageView) indicator.findViewById(R.id.tab_icon);
+        TextView label = (TextView) indicator.findViewById(R.id.tab_title);
+        icon.setVisibility(View.GONE);
+        label.setText(title);
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+        label.setTypeface(null, Typeface.NORMAL);
+        return indicator;
+    }
+
+    private void updateTextTabIndicators(TabHost tabHost, TabWidget widget) {
+        if (widget == null) return;
+        int selected = tabHost.getCurrentTab();
+        for (int i = 0; i < widget.getChildCount(); i++) {
+            View tab = widget.getChildAt(i);
+            TextView label = (TextView) tab.findViewById(R.id.tab_title);
+            if (label != null) label.setTextColor(i == selected ? 0xFFCC181E : 0xFF606060);
+        }
     }
 
     private void setupScrollHandler() {
@@ -3016,6 +3095,7 @@ public class VideoActivity extends Activity {
                 // Keep the background resolution running, but do not touch the UI/player yet.
                 // Save the URL, and let onResume handle the playback when the user returns.
                 videoUrl = shouldStream ? targetUrl : null;
+                if (shouldStream) startBackgroundPlayback();
                 if (!shouldStream) {
                     downloadVideoTask = new DownloadVideoTask();
                     downloadVideoTask.execute(targetUrl);
@@ -3174,7 +3254,10 @@ public class VideoActivity extends Activity {
                     resetVideo();
                     videoUrl = Uri.fromFile(videoFile).toString();
                     videoPlaying = true;
-                    if (isActivityStopped) return;
+                    if (isActivityStopped) {
+                        startBackgroundPlayback();
+                        return;
+                    }
                     applyOpenCoreLayoutFix();
                     attachVideoListeners();
 

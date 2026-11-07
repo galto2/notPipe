@@ -26,7 +26,7 @@ import io.github.gohoski.notpipe.util.InstancesUpdater;
  */
 public class SettingsActivity extends Activity implements InstancesUpdater.OnInstancesUpdatedListener {
     private LinearLayout apiInstancesContainer;
-    private CheckBox updateInstancesChk, streamPlaybackChk, convertVideosChk, asyncUriChk;
+    private CheckBox updateInstancesChk, streamPlaybackChk, convertVideosChk, asyncUriChk, backgroundPlaybackChk;
     private CheckBox fullscreenRotateChk;
     private CheckBox hideShortsRecChk, hideShortsSubsChk;
     private EditText shortLengthEdit;
@@ -81,6 +81,7 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         convertVideosChk = (CheckBox) findViewById(R.id.convert_chk);
         convertLayout = (LinearLayout) findViewById(R.id.codec_layout);
         asyncUriChk = (CheckBox) findViewById(R.id.async_uri_chk);
+        backgroundPlaybackChk = (CheckBox) findViewById(R.id.background_playback_chk);
         fullscreenRotateChk = (CheckBox) findViewById(R.id.fullscreen_rotate_chk);
         hideShortsRecChk = (CheckBox) findViewById(R.id.hide_shorts_rec_chk);
         hideShortsSubsChk = (CheckBox) findViewById(R.id.hide_shorts_subs_chk);
@@ -141,6 +142,7 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         convertVideosChk.setChecked(config.isConvertVideos());
         codecSpinner.setSelection(config.getConvertCodec());
         asyncUriChk.setChecked(config.isAsyncSetVideoUri());
+        backgroundPlaybackChk.setChecked(config.isBackgroundPlayback());
         fullscreenRotateChk.setChecked(config.isFullscreenRotateLandscape());
 
         if (config.isConvertVideos()) {
@@ -162,7 +164,6 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         findViewById(R.id.cancel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(context, MainActivity.class));
                 finish();
             }
         });
@@ -170,7 +171,6 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
             @Override
             public void onClick(View v) {
                 saveSettings();
-                startActivity(new Intent(context, MainActivity.class));
                 finish();
             }
         });
@@ -193,6 +193,7 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         config.setConvertVideos(convertVideosChk.isChecked());
         config.setConvertCodec(codecSpinner.getSelectedItemPosition());
         config.setAsyncSetVideoUri(asyncUriChk.isChecked());
+        config.setBackgroundPlayback(backgroundPlaybackChk.isChecked());
         config.setFullscreenRotateLandscape(fullscreenRotateChk.isChecked());
         config.setHideShortsRecommendations(hideShortsRecChk.isChecked());
         config.setHideShortsSubscriptions(hideShortsSubsChk.isChecked());
@@ -209,6 +210,10 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         config.setYtApiLegacyInstances(ytApiLegacySection.getInstances());
 
         configManager.saveConfig(config);
+        if (!config.isBackgroundPlayback()) {
+            BackgroundPlaybackService.clearPlaybackSession();
+            stopService(new Intent(this, BackgroundPlaybackService.class));
+        }
         Manager.getInstance().reloadInstances();
     }
 

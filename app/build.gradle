@@ -5,7 +5,7 @@ android {
     buildToolsVersion "25.0.0"
     defaultConfig {
         applicationId "io.github.gohoski.notpipe"
-        minSdkVersion 3
+        minSdkVersion 16
         //noinspection OldTargetApi
         targetSdkVersion 25
         versionCode 6

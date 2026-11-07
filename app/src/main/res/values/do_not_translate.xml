@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">notPipe</string>
+    <string name="app_name" translatable="false">YouTube</string>
     <string name="yt2009_url_hint" translatable="false">http://example.com:3759</string>
     <string name="instances_url_hint" translatable="false">http://144.31.189.129/notPipe.json</string>
     <string-array name="qualities">

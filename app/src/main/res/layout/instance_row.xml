@@ -14,8 +14,10 @@
 
     <ImageButton
         android:id="@+id/removeInstanceButton"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/remove_instance"
         android:src="@android:drawable/ic_menu_delete"/>
 
 </LinearLayout>

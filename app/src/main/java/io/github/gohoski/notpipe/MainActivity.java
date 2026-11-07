@@ -31,6 +31,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
+import android.widget.SearchView;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
@@ -63,6 +64,8 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     private static final int REQUEST_LOGIN = 1001;
 
     private VideoAdapter adapter;
+    private ImageButton searchBtn;
+    private View searchHeader;
     private List<VideoInfo> videos;
     private AutoCompleteTextView searchQuery;
     private AbsListView listView;
@@ -171,12 +174,9 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
 
     private void ensureHomeAdapter() {
         if (adapter == null && listView != null) {
-            int layout;
-            if (isSearchMode || isRecommendations) {
-                layout = R.layout.item_video;
-            } else {
-                layout = R.layout.item_video_noicon;
-            }
+            int layout = listView instanceof GridView
+                    ? R.layout.item_video_noicon
+                    : R.layout.item_video;
             adapter = new VideoAdapter(this, layout, new ArrayList<VideoInfo>());
             setAdapterForView(listView, adapter);
         }
@@ -192,12 +192,11 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         final LinearLayout noPopular = (LinearLayout) findViewById(R.id.no_popular);
         context = this;
 
-        final ImageButton searchBtn;
-
         // ListView = phones, GridView = tablet
         if (listView instanceof ListView) {
             ListView lv = (ListView) listView;
             View headerView = getLayoutInflater().inflate(R.layout.header_search, lv, false);
+            searchHeader = headerView;
             lv.addHeaderView(headerView, null, false);
             lv.setItemsCanFocus(true);
             searchQuery = (AutoCompleteTextView) headerView.findViewById(R.id.search_query);
@@ -205,6 +204,9 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         } else {
             searchQuery = (AutoCompleteTextView) findViewById(R.id.search_query);
             searchBtn = (ImageButton) findViewById(R.id.search_btn);
+        }
+        if (searchHeader == null && searchQuery.getParent() instanceof View) {
+            searchHeader = (View) searchQuery.getParent();
         }
         ensureHomeAdapter();
 
@@ -371,12 +373,9 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
             loading.setVisibility(View.GONE);
             noPopular.setVisibility(View.GONE);
 
-            int layout;
-            if (isSearchMode || isRecommendations) {
-                layout = R.layout.item_video;
-            } else {
-                layout = R.layout.item_video_noicon;
-            }
+            int layout = listView instanceof GridView
+                    ? R.layout.item_video_noicon
+                    : R.layout.item_video;
 
             adapter = new VideoAdapter(this, layout, videos);
             setAdapterForView(listView, adapter);
@@ -398,7 +397,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
 
             tabSpec = tabHost.newTabSpec("you");
             tabSpec.setContent(R.id.me);
-            safeSetIndicator(tabSpec, getString(R.string.tab_you), R.drawable.ic_user);
+            safeSetIndicator(tabSpec, getString(R.string.tab_you), android.R.drawable.ic_menu_agenda);
             tabHost.addTab(tabSpec);
 
             tabHost.setCurrentTab(0);
@@ -406,13 +405,17 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
             TabWidget tabWidget = tabHost.getTabWidget();
             removeTabStrip(tabWidget);
             int compactHeight = (int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 42f, getResources().getDisplayMetrics());
+                    TypedValue.COMPLEX_UNIT_DIP, 56f, getResources().getDisplayMetrics());
             String[] titles = new String[] {
                     getString(R.string.tab_home),
                     getString(R.string.tab_subscriptions),
                     getString(R.string.tab_you)
             };
-            int[] iconResIds = new int[] { R.drawable.ic_home, R.drawable.ic_subscriptions, R.drawable.ic_user };
+            int[] iconResIds = new int[] {
+                    R.drawable.ic_home,
+                    R.drawable.ic_subscriptions,
+                    android.R.drawable.ic_menu_agenda
+            };
             for (int i = 0; i < tabWidget.getChildCount(); i++) {
                 View tabView = tabWidget.getChildAt(i);
                 tabView.setBackgroundResource(R.drawable.tab_selector);
@@ -429,9 +432,11 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                             ViewGroup.LayoutParams.FILL_PARENT));
                 }
             }
+            updateTabIndicators(tabHost, tabWidget);
             tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
                 @Override
                 public void onTabChanged(String tabId) {
+                    updateTabIndicators(tabHost, tabWidget);
                     if ("subscriptions".equals(tabId)) {
                         loadSubscriptions();
                     } else if ("you".equals(tabId)) {
@@ -526,6 +531,19 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
 
         text.setText(title);
         return view;
+    }
+
+    private void updateTabIndicators(TabHost tabHost, TabWidget tabWidget) {
+        int selectedPosition = tabHost.getCurrentTab();
+        for (int i = 0; i < tabWidget.getChildCount(); i++) {
+            View tab = tabWidget.getChildAt(i);
+            if (tab == null) continue;
+            ImageView icon = (ImageView) tab.findViewById(R.id.tab_icon);
+            TextView title = (TextView) tab.findViewById(R.id.tab_title);
+            int color = i == selectedPosition ? 0xFFCC181E : 0xFF606060;
+            if (icon != null) icon.setColorFilter(color);
+            if (title != null) title.setTextColor(color);
+        }
     }
 
     private void safeSetIndicator(TabHost.TabSpec tabSpec, String title, int iconResId) {
@@ -626,6 +644,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     @Override
     protected void onResume() {
         super.onResume();
+        config = ConfigManager.getInstance().getConfig();
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
@@ -1315,7 +1334,49 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        final MenuItem searchItem = menu.findItem(R.id.menu_search);
+        if (searchItem != null) {
+            SearchView searchView = (SearchView) searchItem.getActionView();
+            searchView.setQueryHint(getString(R.string.search_hint));
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    submitToolbarSearch(query);
+                    searchItem.collapseActionView();
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String query) {
+                    if (searchQuery != null && !query.equals(searchQuery.getText().toString())) {
+                        searchQuery.setText(query);
+                    }
+                    return true;
+                }
+            });
+            searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+                @Override
+                public boolean onMenuItemActionExpand(MenuItem item) {
+                    if (searchHeader != null) searchHeader.setVisibility(View.GONE);
+                    return true;
+                }
+
+                @Override
+                public boolean onMenuItemActionCollapse(MenuItem item) {
+                    if (searchHeader != null) searchHeader.setVisibility(View.VISIBLE);
+                    return true;
+                }
+            });
+        }
         return true;
+    }
+
+    private void submitToolbarSearch(String query) {
+        if (searchQuery == null || searchBtn == null) return;
+        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        if (tabHost != null) tabHost.setCurrentTab(0);
+        searchQuery.setText(query);
+        searchBtn.performClick();
     }
 
     @Override
@@ -1385,7 +1446,6 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menu_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
-            finish();
             return true;
         } else if (item.getItemId() == R.id.menu_about) {
             LinearLayout layout = new LinearLayout(this);
@@ -1404,7 +1464,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                     ViewGroup.LayoutParams.FILL_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
             ));
-            imageView.setImageResource(R.drawable.main_icon);
+            imageView.setImageResource(R.drawable.video_icon);
             layout.addView(imageView);
 
             final TextView text = new TextView(this);
@@ -1557,7 +1617,9 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                     if (noPopularView != null) noPopularView.setVisibility(View.GONE);
                     videos = result.videos;
                     isRecommendations = result.isRecommendations;
-                    int layout = result.isRecommendations ? R.layout.item_video : R.layout.item_video_noicon;
+                    int layout = listView instanceof GridView
+                            ? R.layout.item_video_noicon
+                            : R.layout.item_video;
                     adapter = new VideoAdapter(context, layout, videos);
                     if (listView != null) {
                         setAdapterForView(listView, adapter);

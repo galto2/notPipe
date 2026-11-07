@@ -21,6 +21,7 @@ public class Config {
     private int updateFrequency;
     private boolean useExternalPlayer;
     private boolean streamPlayback;
+    private boolean backgroundPlayback;
     private long lastUpdate;
     private boolean convertVideos;
     private int convertCodec;
@@ -59,6 +60,7 @@ public class Config {
         updateFrequency = other.updateFrequency;
         useExternalPlayer = other.useExternalPlayer;
         streamPlayback = other.streamPlayback;
+        backgroundPlayback = other.backgroundPlayback;
         lastUpdate = other.lastUpdate;
         convertVideos = other.convertVideos;
         convertCodec = other.convertCodec;
@@ -158,6 +160,14 @@ public class Config {
         this.streamPlayback = stream;
     }
 
+    public boolean isBackgroundPlayback() {
+        return backgroundPlayback;
+    }
+
+    public void setBackgroundPlayback(boolean enabled) {
+        this.backgroundPlayback = enabled;
+    }
+
     public long getLastUpdate() {
         return lastUpdate;
     }
@@ -241,6 +251,7 @@ public class Config {
         instancesUpdateUrl = "http://144.31.189.129/notPipe.json";
         updateFrequency = 1;
         streamPlayback = true;
+        backgroundPlayback = true;
         fullscreenRotateLandscape = true;
     }
 }

@@ -2,6 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:background="#FFFFFF"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Separate layout for Android 1.5 due to small Dalvik stack size.
         (If we just use the XML from layout-v4, it will crash on Android 1.5.)
@@ -39,9 +40,9 @@
                 android:layout_height="wrap_content" />
             <ImageView
                 android:id="@+id/play"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@android:drawable/ic_media_play"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@drawable/video_icon"
                 android:layout_gravity="center"/>
             <LinearLayout
                 android:id="@+id/video_loading"
@@ -80,7 +81,7 @@
                     android:orientation="horizontal"
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="12dp"
                     android:gravity="top">
 
                     <LinearLayout
@@ -92,9 +93,8 @@
                             android:id="@+id/title"
                             android:layout_width="fill_parent"
                             android:layout_height="wrap_content"
-                            android:textStyle="bold"
-                            android:textSize="16sp"
-                            android:textColor="@android:color/primary_text_dark_nodisable"
+                            android:textSize="18sp"
+                            android:textColor="#0F0F0F"
                             tools:text="Example Title"/>
 
                         <TextView
@@ -102,6 +102,7 @@
                             android:layout_width="fill_parent"
                             android:layout_height="wrap_content"
                             android:textSize="12sp"
+                            android:textColor="#606060"
                             tools:text="1356 views   8 days ago"/>
 
                         <LinearLayout
@@ -134,7 +135,8 @@
                                         android:layout_height="wrap_content"
                                         android:singleLine="true"
                                         android:ellipsize="end"
-                                        android:textColor="@android:color/primary_text_dark"
+                                        android:textColor="#0F0F0F"
+                                        android:textSize="14sp"
                                         tools:text="My channel"/>
                                     <TextView
                                         android:id="@+id/subscribers"
@@ -142,6 +144,7 @@
                                         android:layout_height="wrap_content"
                                         android:singleLine="true"
                                         android:textSize="12sp"
+                                        android:textColor="#606060"
                                         android:paddingLeft="4dp"
                                         tools:text="1356"/>
                                 </TableRow>
@@ -152,7 +155,9 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="fill_parent"
                                 android:layout_marginLeft="8dip"
+                                android:background="#CC181E"
                                 android:text="@string/subscribe"
+                                android:textColor="#FFFFFF"
                                 android:textSize="12sp"
                                 android:visibility="gone"
                                 tools:visibility="visible"/>
@@ -171,7 +176,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="fill_parent"
                         android:drawableLeft="@drawable/ic_like"
-                        android:textSize="16sp"
+                        android:drawablePadding="6dp"
+                        android:background="@android:color/transparent"
+                        android:textColor="#606060"
+                        android:textSize="14sp"
                         android:text="@string/like"
                         tools:text="1356"/>
 
@@ -179,6 +187,7 @@
                         android:id="@+id/dislike"
                         android:layout_width="wrap_content"
                         android:layout_height="fill_parent"
+                        android:background="@android:color/transparent"
                         android:src="@drawable/ic_dislike"/>
 
                     <Button
@@ -186,6 +195,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="fill_parent"
                         android:drawableLeft="@drawable/ic_share"
+                        android:drawablePadding="6dp"
+                        android:background="@android:color/transparent"
+                        android:textColor="#606060"
+                        android:textSize="14sp"
                         android:text="@string/share"
                         android:singleLine="true"/>
                 </LinearLayout>
@@ -194,12 +207,14 @@
                     android:id="@+id/playback_info"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:paddingLeft="24dp"
-                    android:paddingRight="24dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
+                    android:background="#F1F1F1"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
                     android:text="@string/playback_via"
-                    android:textSize="12sp"/>
+                    android:textSize="12sp"
+                    android:textColor="#606060"/>
 
                 <TabHost
                     android:id="@android:id/tabhost"
@@ -243,8 +258,8 @@
                                     android:layout_width="fill_parent"
                                     android:layout_height="wrap_content"
                                     android:orientation="vertical"
-                                    android:paddingLeft="24dp"
-                                    android:paddingRight="24dp" />
+                                    android:paddingLeft="16dp"
+                                    android:paddingRight="16dp" />
                             </LinearLayout>
                             <LinearLayout
                                 android:id="@+id/comments"
@@ -269,8 +284,8 @@
                                     android:layout_width="fill_parent"
                                     android:layout_height="wrap_content"
                                     android:orientation="vertical"
-                                    android:paddingLeft="15dp"
-                                    android:paddingRight="15dp" />
+                                    android:paddingLeft="16dp"
+                                    android:paddingRight="16dp" />
                             </LinearLayout>
                         </FrameLayout>
                     </LinearLayout>

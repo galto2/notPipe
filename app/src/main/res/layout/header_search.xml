@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/search_header"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
     android:descendantFocusability="afterDescendants">
 
     <AutoCompleteTextView
@@ -10,6 +15,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="@android:string/search_go"
+        android:background="@drawable/rounded_background"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
         android:layout_weight="1"
         android:saveEnabled="false"
         android:singleLine="true"
@@ -18,7 +26,10 @@
 
     <ImageButton
         android:id="@+id/search_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:src="@android:drawable/ic_menu_search"/>
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="8dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/search"
+        android:src="@android:drawable/ic_menu_search" />
 </LinearLayout>

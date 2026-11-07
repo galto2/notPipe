@@ -42,8 +42,12 @@
     <string name="views">%s views</string>
     <string name="playback_via">Playback via %s &gt;</string>
     <string name="settings">Settings</string>
+    <string name="search">Search</string>
+    <string name="search_hint">Search YouTube</string>
     <string name="about">About</string>
     <string name="instances">Instances</string>
+    <string name="add_instance">Add instance</string>
+    <string name="remove_instance">Remove instance</string>
     <string name="playback">Playback</string>
     <string name="video_quality">Video quality</string>
     <string name="update_instances_url">Update instances from URL</string>
@@ -64,6 +68,12 @@
     <string name="video_player_desc">The <b>internal player</b> plays videos directly within the app using the system\'s built-in player. The <b>external player</b> opens the video in a separate app, letting you choose your preferred player (e.g., MX Player). <i>If videos do not play, please install MX Player and switch to the external player. If MX Player isn\'t available or videos are lagging, try using <b>conversion</b> below instead.</i></string>
     <string name="stream_playback">Stream playback</string>
     <string name="stream_playback_desc">If disabled, videos will be downloaded to the SD card before playback, which sometimes can improve stability.</string>
+    <string name="background_playback">Background playback</string>
+    <string name="background_playback_desc">Keep audio playing when you leave the app. Playback controls appear in the notification area.</string>
+    <string name="background_playing">Playing in background</string>
+    <string name="background_paused">Paused</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
     <string name="instance_exist">Instance already exists</string>
     <string name="incorrect_url">Please enter a correct URL</string>
     <string name="url">Enter URL</string>
@@ -152,7 +162,7 @@
     <string name="not_logged_in">Sign in to view your YouTube profile</string>
     <string name="tab_home">Home</string>
     <string name="tab_subscriptions">Subscriptions</string>
-    <string name="tab_you">You</string>
+    <string name="tab_you">Library</string>
     <string name="history">History</string>
     <string name="subscriptions_hint">Login to see your subscriptions</string>
     <string name="logged_in">Logged in</string>

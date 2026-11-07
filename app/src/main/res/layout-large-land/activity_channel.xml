@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
+    android:layout_height="fill_parent"
+    android:background="#FFFFFF">
     <!--layout for tablets (large-land) -->
     <LinearLayout
         android:layout_width="280dp"

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -108,7 +109,9 @@ public class ChannelActivity extends Activity {
         tabHost.setup();
 
         if (hasForYou) {
-            tabHost.addTab(tabHost.newTabSpec("for_you").setIndicator(getString(R.string.for_you)).setContent(R.id.for_you));
+            tabHost.addTab(tabHost.newTabSpec("for_you")
+                    .setIndicator(createTextTabIndicator(getString(R.string.for_you)))
+                    .setContent(R.id.for_you));
 
             forYouList = (AbsListView) findViewById(R.id.for_you_list);
             findViewById(R.id.for_you_loading).setVisibility(View.GONE);
@@ -130,7 +133,18 @@ public class ChannelActivity extends Activity {
             });
         }
 
-        tabHost.addTab(tabHost.newTabSpec("videos").setIndicator(getString(R.string.videos)).setContent(R.id.videos));
+        tabHost.addTab(tabHost.newTabSpec("videos")
+                .setIndicator(createTextTabIndicator(getString(R.string.videos)))
+                .setContent(R.id.videos));
+
+        TabWidget tabWidget = tabHost.getTabWidget();
+        int tabHeight = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 48f, getResources().getDisplayMetrics());
+        for (int i = 0; i < tabWidget.getChildCount(); i++) {
+            View tab = tabWidget.getChildAt(i);
+            tab.setBackgroundResource(R.drawable.tab_selector);
+            if (tab.getLayoutParams() != null) tab.getLayoutParams().height = tabHeight;
+        }
 
         sortingSpinner = (Spinner) findViewById(R.id.sorting_spinner);
         if (NotPipe.SDK < 11 && sortingSpinner != null) {
@@ -161,6 +175,7 @@ public class ChannelActivity extends Activity {
         tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
             @Override
             public void onTabChanged(String tabId) {
+                updateChannelTabIndicators();
                 if ("videos".equals(tabId)) {
                     if (currentSort == 0 && hasLatestFallback && latestVideos != null) {
                         displayVideos(latestVideos);
@@ -188,13 +203,35 @@ public class ChannelActivity extends Activity {
 
         if (NotPipe.SDK < 11) {
             int height = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 33f, getResources().getDisplayMetrics());
-            TabWidget widget = tabHost.getTabWidget();
-            for (int i = 0; i < widget.getChildCount(); i++) {
-                View child = widget.getChildAt(i);
+            for (int i = 0; i < tabWidget.getChildCount(); i++) {
+                View child = tabWidget.getChildAt(i);
                 if (child != null && child.getLayoutParams() != null) {
                     child.getLayoutParams().height = height;
                 }
             }
+        }
+        updateChannelTabIndicators();
+    }
+
+    private View createTextTabIndicator(String title) {
+        View indicator = getLayoutInflater().inflate(R.layout.tab_indicator, null);
+        ImageView icon = (ImageView) indicator.findViewById(R.id.tab_icon);
+        TextView label = (TextView) indicator.findViewById(R.id.tab_title);
+        icon.setVisibility(View.GONE);
+        label.setText(title);
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+        label.setTypeface(null, Typeface.NORMAL);
+        return indicator;
+    }
+
+    private void updateChannelTabIndicators() {
+        if (tabHost == null || tabHost.getTabWidget() == null) return;
+        int selected = tabHost.getCurrentTab();
+        TabWidget widget = tabHost.getTabWidget();
+        for (int i = 0; i < widget.getChildCount(); i++) {
+            View tab = widget.getChildAt(i);
+            TextView label = (TextView) tab.findViewById(R.id.tab_title);
+            if (label != null) label.setTextColor(i == selected ? 0xFFCC181E : 0xFF606060);
         }
     }
 
