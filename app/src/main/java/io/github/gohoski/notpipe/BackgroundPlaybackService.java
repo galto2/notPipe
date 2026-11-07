@@ -349,7 +349,7 @@ public class BackgroundPlaybackService extends Service {
                     url = Manager.getInstance().getConvUrl(targetItem.id, quality,
                             Codec.fromIndex(config.getConvertCodec()), null);
                 } else {
-                    url = Manager.getInstance().getVideoUrl(targetItem.id, quality, HttpClient.TIMEOUT, null);
+                    url = Manager.getInstance().getVideoUrl(targetItem.id, quality, HttpClient.VIDEO_TIMEOUT, null);
                 }
                 return new QueueTrackResult(targetPosition, targetItem, url);
             } catch (Exception e) {
