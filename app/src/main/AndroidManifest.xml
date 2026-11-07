@@ -9,10 +9,10 @@
     <application
         android:name=".NotPipe"
         android:allowBackup="true"
-        android:icon="@drawable/video_icon"
+        android:icon="@mipmap/youtube_app_icon"
         android:logo="@drawable/actionbar_logo"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/video_icon"
+        android:roundIcon="@mipmap/youtube_app_icon"
         android:theme="@style/AppTheme">
         <activity
             android:label="@string/app_name"

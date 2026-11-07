@@ -1,17 +1,19 @@
 package io.github.gohoski.notpipe;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import io.github.gohoski.notpipe.api.Manager;
@@ -26,10 +28,7 @@ import io.github.gohoski.notpipe.util.InstancesUpdater;
  */
 public class SettingsActivity extends Activity implements InstancesUpdater.OnInstancesUpdatedListener {
     private LinearLayout apiInstancesContainer;
-    private CheckBox updateInstancesChk, streamPlaybackChk, convertVideosChk, asyncUriChk, backgroundPlaybackChk;
-    private CheckBox fullscreenRotateChk;
-    private CheckBox hideShortsRecChk, hideShortsSubsChk;
-    private EditText shortLengthEdit;
+    private Switch updateInstancesChk, streamPlaybackChk, convertVideosChk, backgroundPlaybackChk;
     private LinearLayout updateInstancesLayout, convertLayout;
     private EditText instancesUrlEdit;
     private Spinner updateFreqSpinner, playerSpinner, codecSpinner;
@@ -48,18 +47,20 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+        ActionBar actionBar = getActionBar();
+        if (actionBar != null) actionBar.setDisplayHomeAsUpEnabled(true);
 
         context = this;
         configManager = ConfigManager.getInstance();
         config = configManager.getConfig();
 
         apiInstancesContainer = (LinearLayout) findViewById(R.id.apiInstancesContainer);
-        updateInstancesChk = (CheckBox) findViewById(R.id.update_chk);
+        updateInstancesChk = (Switch) findViewById(R.id.update_chk);
         updateInstancesLayout = (LinearLayout) findViewById(R.id.update_instances);
         instancesUrlEdit = (EditText) findViewById(R.id.instances_url);
         updateFreqSpinner = (Spinner) findViewById(R.id.update_spinner);
         playerSpinner = (Spinner) findViewById(R.id.player_spinner);
-        streamPlaybackChk = (CheckBox) findViewById(R.id.stream_playback_chk);
+        streamPlaybackChk = (Switch) findViewById(R.id.stream_playback_chk);
         qualitySpinner = (Spinner) findViewById(R.id.quality_spinner);
         qualitySpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
@@ -78,18 +79,9 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
             }
         });
         codecSpinner = (Spinner) findViewById(R.id.codec_spinner);
-        convertVideosChk = (CheckBox) findViewById(R.id.convert_chk);
+        convertVideosChk = (Switch) findViewById(R.id.convert_chk);
         convertLayout = (LinearLayout) findViewById(R.id.codec_layout);
-        asyncUriChk = (CheckBox) findViewById(R.id.async_uri_chk);
-        backgroundPlaybackChk = (CheckBox) findViewById(R.id.background_playback_chk);
-        fullscreenRotateChk = (CheckBox) findViewById(R.id.fullscreen_rotate_chk);
-        hideShortsRecChk = (CheckBox) findViewById(R.id.hide_shorts_rec_chk);
-        hideShortsSubsChk = (CheckBox) findViewById(R.id.hide_shorts_subs_chk);
-        shortLengthEdit = (EditText) findViewById(R.id.short_length_edit);
-
-        hideShortsRecChk.setChecked(config.isHideShortsRecommendations());
-        hideShortsSubsChk.setChecked(config.isHideShortsSubscriptions());
-        shortLengthEdit.setText(String.valueOf(config.getShortLengthSeconds()));
+        backgroundPlaybackChk = (Switch) findViewById(R.id.background_playback_chk);
 
         updateInstancesChk.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -141,9 +133,7 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         setSpinnerSelection(qualitySpinner, config.getPreferredQuality() + "p");
         convertVideosChk.setChecked(config.isConvertVideos());
         codecSpinner.setSelection(config.getConvertCodec());
-        asyncUriChk.setChecked(config.isAsyncSetVideoUri());
         backgroundPlaybackChk.setChecked(config.isBackgroundPlayback());
-        fullscreenRotateChk.setChecked(config.isFullscreenRotateLandscape());
 
         if (config.isConvertVideos()) {
             qualitySpinner.setEnabled(false);
@@ -161,19 +151,6 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         apiInstancesContainer.addView(typetypeSection);
         apiInstancesContainer.addView(ytApiLegacySection);
 
-        findViewById(R.id.cancel).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-        findViewById(R.id.ok).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveSettings();
-                finish();
-            }
-        });
         findViewById(R.id.update_btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -192,16 +169,7 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
         config.setPreferredQuality(((String) qualitySpinner.getSelectedItem()).replace("p", ""));
         config.setConvertVideos(convertVideosChk.isChecked());
         config.setConvertCodec(codecSpinner.getSelectedItemPosition());
-        config.setAsyncSetVideoUri(asyncUriChk.isChecked());
         config.setBackgroundPlayback(backgroundPlaybackChk.isChecked());
-        config.setFullscreenRotateLandscape(fullscreenRotateChk.isChecked());
-        config.setHideShortsRecommendations(hideShortsRecChk.isChecked());
-        config.setHideShortsSubscriptions(hideShortsSubsChk.isChecked());
-        int shortLength = 90;
-        try {
-            shortLength = Integer.parseInt(shortLengthEdit.getText().toString().trim());
-        } catch (Exception ignored) {}
-        config.setShortLengthSeconds(shortLength);
 
         config.setInvidiousInstances(invidiousSection.getInstances());
         config.setYt2009Instances(yt2009Section.getInstances());
@@ -224,6 +192,22 @@ public class SettingsActivity extends Activity implements InstancesUpdater.OnIns
                 return;
             }
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            saveSettings();
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        saveSettings();
+        super.onBackPressed();
     }
 
     @Override

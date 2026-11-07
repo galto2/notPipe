@@ -3,9 +3,14 @@
     <item
         android:id="@+id/menu_search"
         android:title="@string/search"
-        android:icon="@android:drawable/ic_menu_search"
+        android:icon="@drawable/youtube_search_grey600_24"
         android:showAsAction="ifRoom|collapseActionView"
         android:actionViewClass="android.widget.SearchView" />
+    <item
+        android:id="@+id/menu_library"
+        android:title="@string/tab_you"
+        android:icon="@drawable/youtube_account_grey600_24"
+        android:showAsAction="ifRoom" />
     <item
         android:id="@+id/menu_settings"
         android:title="@string/settings"

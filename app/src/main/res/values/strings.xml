@@ -161,8 +161,13 @@
     <string name="instance_warn">This instance may have full access to your account. Only use instances you trust!</string>
     <string name="not_logged_in">Sign in to view your YouTube profile</string>
     <string name="tab_home">Home</string>
+    <string name="tab_trending">Trending</string>
     <string name="tab_subscriptions">Subscriptions</string>
+    <string name="tab_inbox">Inbox</string>
     <string name="tab_you">Library</string>
+    <string name="inbox_empty">Your updates will appear here.</string>
+    <string name="server_settings">Servers</string>
+    <string name="video_settings">Video settings</string>
     <string name="history">History</string>
     <string name="subscriptions_hint">Login to see your subscriptions</string>
     <string name="logged_in">Logged in</string>

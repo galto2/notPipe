@@ -47,7 +47,10 @@
                     android:id="@+id/play"
                 android:layout_width="72dp"
                 android:layout_height="72dp"
-                android:src="@drawable/video_icon"
+                    android:background="@drawable/youtube_play_button_background"
+                    android:padding="12dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/youtube_play_arrow_white_48"
                     android:layout_gravity="center"/>
                 <LinearLayout
                     android:id="@+id/video_loading"
@@ -228,7 +231,8 @@
                         android:paddingBottom="10dp"
                         android:text="@string/playback_via"
                         android:textSize="12sp"
-                        android:textColor="#606060"/>
+                        android:textColor="#606060"
+                        android:visibility="gone" />
 
                     <!-- Portrait tab container -->
                     <FrameLayout

@@ -166,8 +166,13 @@
     <string name="instance_warn">У этого инстанса может быть полный доступ к вашему аккаунту. Используйте только те инстансы, которым доверяете!</string>
     <string name="not_logged_in">Войдите, чтобы увидеть свой профиль YouTube</string>
     <string name="tab_home">Главная</string>
+    <string name="tab_trending">В тренде</string>
     <string name="tab_subscriptions">Подписки</string>
+    <string name="tab_inbox">Входящие</string>
+    <string name="inbox_empty">Здесь будут появляться новые уведомления.</string>
     <string name="tab_you">Библиотека</string>
+    <string name="server_settings">Серверы</string>
+    <string name="video_settings">Настройки видео</string>
     <string name="history">История</string>
     <string name="subscriptions_hint">Войдите, чтобы увидеть подписки</string>
     <string name="logged_in">Вы вошли в аккаунт</string>

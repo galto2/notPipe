@@ -10,8 +10,7 @@
     
     <ScrollView 
         android:layout_width="fill_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="fill_parent"
         android:fillViewport="true">
         
         <LinearLayout
@@ -23,13 +22,13 @@
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/instances"
+                android:text="@string/server_settings"
                 android:textStyle="bold"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:paddingBottom="8dp"
-                android:textColor="#CC181E"/>
+                android:textColor="#606060"/>
 
-            <CheckBox
+            <Switch
                 android:id="@+id/update_chk"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -92,11 +91,11 @@
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/playback"
+                android:text="@string/video_settings"
                 android:textStyle="bold"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:paddingTop="24dp"
-                android:textColor="#CC181E"/>
+                android:textColor="#606060"/>
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -121,7 +120,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/video_player_desc"/>
 
-            <CheckBox
+            <Switch
                 android:id="@+id/stream_playback_chk"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
@@ -133,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/stream_playback_desc"/>
 
-            <CheckBox
+            <Switch
                 android:id="@+id/background_playback_chk"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
@@ -143,17 +142,6 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/background_playback_desc" />
-
-            <CheckBox
-                android:id="@+id/async_uri_chk"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/async_uri"/>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/async_uri_"/>
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -183,16 +171,16 @@
                 android:layout_height="wrap_content"
                 android:text="@string/conversion"
                 android:textStyle="bold"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:paddingTop="24dp"
-                android:textColor="#CC181E"/>
+                android:textColor="#606060"/>
 
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/conversion_"/>
 
-            <CheckBox
+            <Switch
                 android:id="@+id/convert_chk"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
@@ -219,86 +207,6 @@
                     android:entries="@array/codecs"/>
             </LinearLayout>
 
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/general"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:paddingTop="24dp"
-                android:textColor="#CC181E"/>
-
-            <CheckBox
-                android:id="@+id/fullscreen_rotate_chk"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/force_landscape"/>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/hide_shorts"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:paddingTop="24dp"
-                android:textColor="#CC181E"/>
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/hide_shorts_length"/>
-                <EditText
-                    android:id="@+id/short_length_edit"
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:singleLine="true"/>
-            </LinearLayout>
-
-            <CheckBox
-                android:id="@+id/hide_shorts_rec_chk"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/hide_shorts_recommendations"/>
-
-            <CheckBox
-                android:id="@+id/hide_shorts_subs_chk"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/hide_shorts_subscriptions"/>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="24dp"
-                android:text="@string/setting_footer"
-                android:textStyle="italic"/>
         </LinearLayout>
     </ScrollView>
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content">
-        
-        <Button
-            android:id="@+id/cancel"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="@android:string/cancel"/>
-            
-        <Button
-            android:id="@+id/ok"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="@android:string/ok"/>
-    </LinearLayout>
 </LinearLayout>

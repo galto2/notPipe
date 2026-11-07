@@ -3,6 +3,7 @@ package io.github.gohoski.notpipe;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.database.MatrixCursor;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -32,6 +33,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.SearchView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
@@ -68,6 +70,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     private View searchHeader;
     private List<VideoInfo> videos;
     private AutoCompleteTextView searchQuery;
+    private SimpleCursorAdapter searchSuggestionsCursorAdapter;
     private AbsListView listView;
     private Context context;
     private Metadata metadata;
@@ -103,6 +106,14 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     private boolean subscriptionsLoaded = false;
     private boolean subscriptionsLoading = false;
 
+    private AbsListView trendingListView;
+    private VideoAdapter trendingAdapter;
+    private List<VideoInfo> trendingVideos;
+    private ProgressBar trendingLoadingView;
+    private TextView trendingEmptyView;
+    private boolean trendingLoaded = false;
+    private boolean trendingLoading = false;
+
     private View channelsHeader;
     private LinearLayout channelsStrip;
     private List<ChannelInfo> subscribedChannels;
@@ -130,6 +141,8 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         boolean isSearchMode;
         boolean homeFeedIsRecommendations;
         String query;
+        List<VideoInfo> trendingVideos;
+        boolean trendingLoaded;
         List<VideoInfo> subscriptionVideos;
         boolean subscriptionsLoaded;
         List<ChannelInfo> subscribedChannels;
@@ -148,6 +161,8 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         state.videos = this.videos;
         state.isSearchMode = this.isSearchMode;
         state.homeFeedIsRecommendations = this.isRecommendations;
+        state.trendingVideos = this.trendingVideos;
+        state.trendingLoaded = this.trendingLoaded;
         if (searchQuery != null) {
             state.query = searchQuery.getText().toString();
         }
@@ -190,6 +205,9 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         listView = (AbsListView) findViewById(R.id.videos);
         final ProgressBar loading = (ProgressBar) findViewById(R.id.loading);
         final LinearLayout noPopular = (LinearLayout) findViewById(R.id.no_popular);
+        trendingListView = (AbsListView) findViewById(R.id.trending_videos);
+        trendingLoadingView = (ProgressBar) findViewById(R.id.trending_loading);
+        trendingEmptyView = (TextView) findViewById(R.id.trending_empty);
         context = this;
 
         // ListView = phones, GridView = tablet
@@ -198,6 +216,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
             View headerView = getLayoutInflater().inflate(R.layout.header_search, lv, false);
             searchHeader = headerView;
             lv.addHeaderView(headerView, null, false);
+            searchHeader.setVisibility(View.GONE);
             lv.setItemsCanFocus(true);
             searchQuery = (AutoCompleteTextView) headerView.findViewById(R.id.search_query);
             searchBtn = (ImageButton) headerView.findViewById(R.id.search_btn);
@@ -207,6 +226,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         }
         if (searchHeader == null && searchQuery.getParent() instanceof View) {
             searchHeader = (View) searchQuery.getParent();
+            searchHeader.setVisibility(View.GONE);
         }
         ensureHomeAdapter();
 
@@ -233,6 +253,8 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
             videos = retained.videos;
             isSearchMode = retained.isSearchMode;
             isRecommendations = retained.homeFeedIsRecommendations;
+            trendingVideos = retained.trendingVideos;
+            trendingLoaded = retained.trendingLoaded;
             subscriptionVideos = retained.subscriptionVideos;
             subscriptionsLoaded = retained.subscriptionsLoaded;
             subscribedChannels = retained.subscribedChannels;
@@ -246,6 +268,38 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         } else if (savedInstanceState != null) {
             isSearchMode = savedInstanceState.getBoolean(STATE_IS_SEARCH_MODE, false);
             isRecommendations = savedInstanceState.getBoolean(STATE_IS_RECOMMENDATIONS, false);
+        }
+
+        if (trendingListView != null) {
+            if (trendingVideos != null) {
+                int trendingLayout = trendingListView instanceof GridView
+                        ? R.layout.item_video_noicon
+                        : R.layout.item_video;
+                trendingAdapter = new VideoAdapter(this, trendingLayout, trendingVideos);
+                setAdapterForView(trendingListView, trendingAdapter);
+            }
+            trendingListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    if (item instanceof VideoInfo) {
+                        Intent intent = new Intent(MainActivity.this, VideoActivity.class);
+                        intent.putExtra("ID", ((VideoInfo) item).id);
+                        startActivity(intent);
+                    }
+                }
+            });
+            trendingListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView view, int scrollState) {
+                    if (scrollState == SCROLL_STATE_IDLE && trendingAdapter != null) {
+                        trendingAdapter.notifyDataSetChanged();
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {}
+            });
         }
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -264,9 +318,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         autoCompleteAdapter.setOnSuggestionsLoadedListener(new AutoCompleteAdapter.OnSuggestionsLoadedListener() {
             @Override
             public void onSuggestionsLoaded() {
-                if (!isDestroyedFlag && searchQuery != null) {
-                    searchQuery.showDropDown();
-                }
+                if (!isDestroyedFlag) refreshToolbarSearchSuggestions();
             }
         });
         searchQuery.setAdapter(autoCompleteAdapter);
@@ -387,17 +439,27 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
 
             TabHost.TabSpec tabSpec = tabHost.newTabSpec("home");
             tabSpec.setContent(R.id.home);
-            safeSetIndicator(tabSpec, getString(R.string.tab_home), R.drawable.ic_home);
+            safeSetIndicator(tabSpec, getString(R.string.tab_home), R.drawable.youtube_tab_home);
+            tabHost.addTab(tabSpec);
+
+            tabSpec = tabHost.newTabSpec("trending");
+            tabSpec.setContent(R.id.trending);
+            safeSetIndicator(tabSpec, getString(R.string.tab_trending), R.drawable.youtube_tab_trending);
             tabHost.addTab(tabSpec);
 
             tabSpec = tabHost.newTabSpec("subscriptions");
             tabSpec.setContent(R.id.subscriptions);
-            safeSetIndicator(tabSpec, getString(R.string.tab_subscriptions), R.drawable.ic_subscriptions);
+            safeSetIndicator(tabSpec, getString(R.string.tab_subscriptions), R.drawable.youtube_tab_subscriptions);
             tabHost.addTab(tabSpec);
 
-            tabSpec = tabHost.newTabSpec("you");
+            tabSpec = tabHost.newTabSpec("inbox");
+            tabSpec.setContent(R.id.inbox);
+            safeSetIndicator(tabSpec, getString(R.string.tab_inbox), R.drawable.youtube_tab_inbox);
+            tabHost.addTab(tabSpec);
+
+            tabSpec = tabHost.newTabSpec("library");
             tabSpec.setContent(R.id.me);
-            safeSetIndicator(tabSpec, getString(R.string.tab_you), android.R.drawable.ic_menu_agenda);
+            safeSetIndicator(tabSpec, getString(R.string.tab_you), R.drawable.youtube_tab_library);
             tabHost.addTab(tabSpec);
 
             tabHost.setCurrentTab(0);
@@ -408,17 +470,21 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                     TypedValue.COMPLEX_UNIT_DIP, 56f, getResources().getDisplayMetrics());
             String[] titles = new String[] {
                     getString(R.string.tab_home),
+                    getString(R.string.tab_trending),
                     getString(R.string.tab_subscriptions),
+                    getString(R.string.tab_inbox),
                     getString(R.string.tab_you)
             };
             int[] iconResIds = new int[] {
-                    R.drawable.ic_home,
-                    R.drawable.ic_subscriptions,
-                    android.R.drawable.ic_menu_agenda
+                    R.drawable.youtube_tab_home,
+                    R.drawable.youtube_tab_trending,
+                    R.drawable.youtube_tab_subscriptions,
+                    R.drawable.youtube_tab_inbox,
+                    R.drawable.youtube_tab_library
             };
             for (int i = 0; i < tabWidget.getChildCount(); i++) {
                 View tabView = tabWidget.getChildAt(i);
-                tabView.setBackgroundResource(R.drawable.tab_selector);
+                tabView.setBackgroundResource(R.drawable.tab_bottom_selector);
                 tabView.setPadding(0, 0, 0, 0);
                 if (tabView.getLayoutParams() != null) {
                     tabView.getLayoutParams().height = compactHeight;
@@ -437,9 +503,11 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                 @Override
                 public void onTabChanged(String tabId) {
                     updateTabIndicators(tabHost, tabWidget);
-                    if ("subscriptions".equals(tabId)) {
+                    if ("trending".equals(tabId)) {
+                        loadTrendingVideos();
+                    } else if ("subscriptions".equals(tabId)) {
                         loadSubscriptions();
-                    } else if ("you".equals(tabId)) {
+                    } else if ("library".equals(tabId)) {
                         loadYouTabData();
                     }
                 }
@@ -513,6 +581,11 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                 if (adapter != null) {
                     adapter.resetImageView(child);
                 }
+            }
+        }
+        if (trendingListView != null && trendingAdapter != null) {
+            for (int i = 0; i < trendingListView.getChildCount(); i++) {
+                trendingAdapter.resetImageView(trendingListView.getChildAt(i));
             }
         }
     }
@@ -651,6 +724,9 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         if (subscriptionsAdapter != null) {
             subscriptionsAdapter.notifyDataSetChanged();
         }
+        if (trendingAdapter != null) {
+            trendingAdapter.notifyDataSetChanged();
+        }
         updateYouTab();
         if (historyLoaded && historyVideos != null) {
             populateHistoryStrip();
@@ -669,6 +745,14 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         } catch (IllegalStateException e) {
             return false;
         }
+    }
+
+    private void loadTrendingVideos() {
+        if (trendingListView == null || trendingLoaded || trendingLoading) return;
+        trendingLoading = true;
+        if (trendingLoadingView != null) trendingLoadingView.setVisibility(View.VISIBLE);
+        if (trendingEmptyView != null) trendingEmptyView.setVisibility(View.GONE);
+        new TrendingTask().execute();
     }
 
     private void setupSubscriptionsList() {
@@ -1331,12 +1415,28 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         }
     }
 
+    private void refreshToolbarSearchSuggestions() {
+        if (autoCompleteAdapter == null || searchSuggestionsCursorAdapter == null) return;
+        MatrixCursor cursor = new MatrixCursor(new String[] { "_id", "suggest_text_1" });
+        for (int i = 0; i < autoCompleteAdapter.getCount(); i++) {
+            cursor.addRow(new Object[] { i, autoCompleteAdapter.getItem(i) });
+        }
+        searchSuggestionsCursorAdapter.changeCursor(cursor);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         final MenuItem searchItem = menu.findItem(R.id.menu_search);
         if (searchItem != null) {
             SearchView searchView = (SearchView) searchItem.getActionView();
+            searchSuggestionsCursorAdapter = new SimpleCursorAdapter(
+                    this,
+                    android.R.layout.simple_dropdown_item_1line,
+                    null,
+                    new String[] { "suggest_text_1" },
+                    new int[] { android.R.id.text1 });
+            searchView.setSuggestionsAdapter(searchSuggestionsCursorAdapter);
             searchView.setQueryHint(getString(R.string.search_hint));
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
@@ -1351,6 +1451,32 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                     if (searchQuery != null && !query.equals(searchQuery.getText().toString())) {
                         searchQuery.setText(query);
                     }
+                    if (autoCompleteAdapter != null) {
+                        autoCompleteAdapter.setSearchActive(false);
+                        autoCompleteAdapter.requestSuggestions(query);
+                    }
+                    return true;
+                }
+            });
+            searchView.setOnSuggestionListener(new SearchView.OnSuggestionListener() {
+                @Override
+                public boolean onSuggestionSelect(int position) {
+                    return false;
+                }
+
+                @Override
+                public boolean onSuggestionClick(int position) {
+                    if (searchSuggestionsCursorAdapter == null || searchSuggestionsCursorAdapter.getCursor() == null) {
+                        return false;
+                    }
+                    android.database.Cursor cursor = searchSuggestionsCursorAdapter.getCursor();
+                    if (!cursor.moveToPosition(position)) return false;
+                    int column = cursor.getColumnIndex("suggest_text_1");
+                    if (column < 0) return false;
+                    String query = cursor.getString(column);
+                    if (autoCompleteAdapter != null) autoCompleteAdapter.setSearchActive(true);
+                    submitToolbarSearch(query);
+                    searchItem.collapseActionView();
                     return true;
                 }
             });
@@ -1363,7 +1489,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
 
                 @Override
                 public boolean onMenuItemActionCollapse(MenuItem item) {
-                    if (searchHeader != null) searchHeader.setVisibility(View.VISIBLE);
+                    if (searchHeader != null) searchHeader.setVisibility(View.GONE);
                     return true;
                 }
             });
@@ -1447,6 +1573,10 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
         if (item.getItemId() == R.id.menu_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
+        } else if (item.getItemId() == R.id.menu_library) {
+            TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+            if (tabHost != null) tabHost.setCurrentTab(4);
+            return true;
         } else if (item.getItemId() == R.id.menu_about) {
             LinearLayout layout = new LinearLayout(this);
             layout.setOrientation(LinearLayout.VERTICAL);
@@ -1464,7 +1594,7 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
                     ViewGroup.LayoutParams.FILL_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
             ));
-            imageView.setImageResource(R.drawable.video_icon);
+            imageView.setImageResource(R.drawable.youtube_actionbar_logo);
             layout.addView(imageView);
 
             final TextView text = new TextView(this);
@@ -1632,6 +1762,58 @@ public class MainActivity extends Activity implements InstancesUpdater.OnInstanc
     private class PopularResult {
         List<VideoInfo> videos;
         boolean isRecommendations;
+        Exception error;
+    }
+
+    private class TrendingTask extends AsyncTask<Void, Void, TrendingResult> {
+        @Override
+        protected TrendingResult doInBackground(Void... params) {
+            TrendingResult result = new TrendingResult();
+            try {
+                Metadata popularApi = null;
+                try {
+                    popularApi = Manager.getInstance().getPopularMetadata();
+                } catch (Exception ignored) {}
+                if (popularApi == null) popularApi = metadata;
+                if (popularApi == null) {
+                    result.error = new Exception("Trending videos unavailable");
+                } else {
+                    result.videos = popularApi.getPopularVideos();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                result.error = e;
+            }
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(TrendingResult result) {
+            trendingLoading = false;
+            if (isDestroyedFlag) return;
+            if (trendingLoadingView != null) trendingLoadingView.setVisibility(View.GONE);
+            if (result.error != null || result.videos == null || result.videos.isEmpty()) {
+                if (trendingEmptyView != null) trendingEmptyView.setVisibility(View.VISIBLE);
+                return;
+            }
+            trendingVideos = filterShorts(result.videos, config.isHideShortsRecommendations());
+            if (trendingVideos == null || trendingVideos.isEmpty()) {
+                if (trendingEmptyView != null) trendingEmptyView.setVisibility(View.VISIBLE);
+                trendingLoaded = true;
+                return;
+            }
+            if (trendingEmptyView != null) trendingEmptyView.setVisibility(View.GONE);
+            int layout = trendingListView instanceof GridView
+                    ? R.layout.item_video_noicon
+                    : R.layout.item_video;
+            trendingAdapter = new VideoAdapter(MainActivity.this, layout, trendingVideos);
+            setAdapterForView(trendingListView, trendingAdapter);
+            trendingLoaded = true;
+        }
+    }
+
+    private class TrendingResult {
+        List<VideoInfo> videos;
         Exception error;
     }
 

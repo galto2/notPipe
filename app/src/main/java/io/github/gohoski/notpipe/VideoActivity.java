@@ -1228,6 +1228,10 @@ public class VideoActivity extends Activity {
         playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_URL, videoUrl);
         playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_TITLE,
                 video == null ? getString(R.string.app_name) : video.title);
+        if (video != null) {
+            playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_CHANNEL, video.channel);
+            playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_THUMBNAIL_URL, video.thumbnail);
+        }
         playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_POSITION, videoPosition);
         playbackIntent.putExtra(BackgroundPlaybackService.EXTRA_VIDEO_ID, videoId);
         startService(playbackIntent);

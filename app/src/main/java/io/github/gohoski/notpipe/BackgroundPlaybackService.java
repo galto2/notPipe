@@ -4,13 +4,19 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * Keeps the current audio stream alive while the video screen is in the background.
@@ -22,6 +28,8 @@ public class BackgroundPlaybackService extends Service {
     public static final String ACTION_STOP = "io.github.gohoski.notpipe.action.BACKGROUND_STOP";
     public static final String EXTRA_URL = "url";
     public static final String EXTRA_TITLE = "title";
+    public static final String EXTRA_CHANNEL = "channel";
+    public static final String EXTRA_THUMBNAIL_URL = "thumbnail_url";
     public static final String EXTRA_POSITION = "position";
     public static final String EXTRA_VIDEO_ID = "video_id";
 
@@ -35,7 +43,11 @@ public class BackgroundPlaybackService extends Service {
 
     private MediaPlayer player;
     private String title;
+    private String channel;
     private String videoId;
+    private String thumbnailUrl;
+    private Bitmap notificationThumbnail;
+    private AsyncTask<String, Void, Bitmap> thumbnailTask;
     private boolean prepared;
     private Handler positionHandler;
     private final Runnable positionRunnable = new Runnable() {
@@ -118,8 +130,12 @@ public class BackgroundPlaybackService extends Service {
 
     private void startPlayback(Intent intent) {
         releasePlayer();
+        cancelThumbnailLoad();
+        releaseThumbnail();
         String url = intent.getStringExtra(EXTRA_URL);
         title = intent.getStringExtra(EXTRA_TITLE);
+        channel = intent.getStringExtra(EXTRA_CHANNEL);
+        thumbnailUrl = intent.getStringExtra(EXTRA_THUMBNAIL_URL);
         videoId = intent.getStringExtra(EXTRA_VIDEO_ID);
         playbackVideoId = videoId;
         playbackUrl = url;
@@ -133,6 +149,10 @@ public class BackgroundPlaybackService extends Service {
         playbackSessionAvailable = true;
 
         startForeground(NOTIFICATION_ID, buildNotification(playbackRequested));
+        if (thumbnailUrl != null && thumbnailUrl.length() > 0) {
+            thumbnailTask = new NotificationThumbnailTask();
+            thumbnailTask.execute(thumbnailUrl);
+        }
         player = new MediaPlayer();
         player.setAudioStreamType(android.media.AudioManager.STREAM_MUSIC);
         player.setWakeMode(this, android.os.PowerManager.PARTIAL_WAKE_LOCK);
@@ -216,19 +236,87 @@ public class BackgroundPlaybackService extends Service {
         toggleIntent.setAction(ACTION_TOGGLE);
         PendingIntent togglePendingIntent = PendingIntent.getService(this, 1, toggleIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+        String playbackState = getString(playing ? R.string.background_playing : R.string.background_paused);
+        String contentText = channel == null || channel.length() == 0 ? playbackState : channel;
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.video_icon)
+                .setSmallIcon(R.drawable.youtube_notification_small)
                 .setContentTitle(title == null ? getString(R.string.app_name) : title)
-                .setContentText(getString(playing ? R.string.background_playing : R.string.background_paused))
+                .setContentText(contentText)
+                .setSubText(playbackState)
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .addAction(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
                         playing ? getString(R.string.pause) : getString(R.string.resume), togglePendingIntent);
+        if (notificationThumbnail != null && !notificationThumbnail.isRecycled()) {
+            builder.setLargeIcon(notificationThumbnail);
+        }
         if (android.os.Build.VERSION.SDK_INT >= 16) {
             builder.setPriority(Notification.PRIORITY_LOW);
         }
         return builder.getNotification();
+    }
+
+    private class NotificationThumbnailTask extends AsyncTask<String, Void, Bitmap> {
+        @Override
+        protected Bitmap doInBackground(String... params) {
+            HttpURLConnection connection = null;
+            InputStream input = null;
+            try {
+                connection = (HttpURLConnection) new URL(params[0]).openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(7000);
+                connection.setInstanceFollowRedirects(true);
+                connection.connect();
+                input = connection.getInputStream();
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inSampleSize = 2;
+                return BitmapFactory.decodeStream(input, null, options);
+            } catch (Exception ignored) {
+                return null;
+            } finally {
+                if (input != null) {
+                    try { input.close(); } catch (IOException ignored) {}
+                }
+                if (connection != null) connection.disconnect();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            if (thumbnailTask != this) {
+                if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+                return;
+            }
+            thumbnailTask = null;
+            if (bitmap == null) return;
+            if (!playbackSessionAvailable || !running) {
+                bitmap.recycle();
+                return;
+            }
+            notificationThumbnail = bitmap;
+            updateNotification(playbackRequested);
+        }
+
+        @Override
+        protected void onCancelled(Bitmap bitmap) {
+            if (thumbnailTask == this) thumbnailTask = null;
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+        }
+    }
+
+    private void cancelThumbnailLoad() {
+        if (thumbnailTask != null) {
+            thumbnailTask.cancel(true);
+            thumbnailTask = null;
+        }
+    }
+
+    private void releaseThumbnail() {
+        if (notificationThumbnail != null && !notificationThumbnail.isRecycled()) {
+            notificationThumbnail.recycle();
+        }
+        notificationThumbnail = null;
     }
 
     private void releasePlayer() {
@@ -248,7 +336,9 @@ public class BackgroundPlaybackService extends Service {
     @Override
     public void onDestroy() {
         if (positionHandler != null) positionHandler.removeCallbacks(positionRunnable);
+        cancelThumbnailLoad();
         releasePlayer();
+        releaseThumbnail();
         running = false;
         stopForeground(true);
         super.onDestroy();

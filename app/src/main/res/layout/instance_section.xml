@@ -7,7 +7,7 @@
         android:layout_height="wrap_content"
         android:textStyle="bold"
         android:textSize="14sp"
-        android:textColor="#CC181E"
+        android:textColor="#606060"
         android:paddingTop="12dp"
         android:paddingBottom="4dp"/>
 
